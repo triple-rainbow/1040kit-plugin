@@ -5,7 +5,7 @@ Public repo: the tax engine, the MCP server (npm `1040kit`) and the assistant pl
 ## Layout
 
 - `packages/engine` (`@1040kit/engine`, private, inlined into the npm bundle): pure, deterministic, zero dependencies. Per-year parameters in `src/params/`, forms in `src/forms/`, rules in `src/rules/`. Every value is a traced node with an IRS citation; form line numbers come from `formLines` / `lineAliases`.
-- `packages/mcp` (`1040kit`): stdio MCP server. Tools in `src/tools/`, storage behind `openStore`, PDF filling in `src/output/`, MCP Apps widgets in `src/ui/`.
+- `packages/mcp` (`1040kit`): stdio MCP server. Tools in `src/tools/`, storage behind `openStore`, PDF filling in `src/output/` (IRS PDFs and field maps in `assets/`, resolved from the package root), MCP Apps widgets in `src/ui/`. Published as one esbuild bundle, `dist/bin.js`; see `docs/releasing.md`.
 - `plugins/claude-code`, `plugins/codex`: skills (Codex skills are symlinks to the Claude Code ones). `plugins/scripts/check-skills.ts` checks that skills only name real tools, in playbook order.
 - `plugins/dev/1040kit-dev.sh`: runs the server from source with a sandbox in `.dev/`.
 
@@ -14,6 +14,7 @@ Public repo: the tax engine, the MCP server (npm `1040kit`) and the assistant pl
 - `pnpm test` — engine, MCP and skill-linter tests
 - `pnpm typecheck`
 - `pnpm --filter 1040kit widget:harness` — build the widget test host
+- `pnpm --filter 1040kit test:pack` — pack the npm package, install it outside the workspace and drive the installed bin (needs the network)
 
 ## Rules
 
