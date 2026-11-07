@@ -1,24 +1,60 @@
 {
   "name": "1040kit",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
   "type": "module",
-  "description": "1040kit — AI tax software that runs on your computer (MCP server)",
+  "description": "Free AI tax software that runs on your computer: the 1040kit MCP server for Claude Code and Codex. Prepares a US federal income tax return (Form 1040) locally.",
   "license": "AGPL-3.0-only",
+  "author": "Triple Rainbow",
+  "homepage": "https://1040kit.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/triple-rainbow/1040kit-plugin.git",
+    "directory": "packages/mcp"
+  },
+  "bugs": {
+    "url": "https://github.com/triple-rainbow/1040kit-plugin/issues"
+  },
+  "keywords": [
+    "tax",
+    "taxes",
+    "1040",
+    "form-1040",
+    "irs",
+    "tax-return",
+    "tax-software",
+    "ai-tax",
+    "mcp",
+    "mcp-server",
+    "model-context-protocol",
+    "claude",
+    "claude-code",
+    "codex"
+  ],
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "bin": {
-    "1040kit": "./src/bin.ts"
+    "1040kit": "dist/bin.js"
+  },
+  "files": [
+    "dist",
+    "assets",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
   },
   "scripts": {
+    "build": "node --import tsx scripts/build.ts",
     "start": "node --import tsx src/bin.ts",
     "test": "node --import tsx --test 'test/**/*.test.ts'",
+    "test:pack": "node --import tsx --test test/pack.smoke.ts",
     "typecheck": "tsc --noEmit",
     "widget:harness": "node --import tsx scripts/widget-harness/build.ts"
   },
   "dependencies": {
-    "@1040kit/engine": "workspace:*",
     "@modelcontextprotocol/ext-apps": "1.7.5",
     "@modelcontextprotocol/sdk": "^1.32.2",
     "@tesseract.js-data/eng": "^1.0.0",
@@ -29,8 +65,10 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@1040kit/engine": "workspace:*",
     "@napi-rs/canvas": "^1.1.0",
     "@types/node": "^26.6.6",
+    "esbuild": "^0.25.12",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   }

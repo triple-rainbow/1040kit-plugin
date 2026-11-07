@@ -25,3 +25,6 @@ packages/engine/test/private/*.json
 .output/
 .nitro/
 dist/
+
+# npm release tarballs (release workflow)
+/.release/

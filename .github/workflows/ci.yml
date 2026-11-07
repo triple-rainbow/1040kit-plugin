@@ -34,3 +34,6 @@ jobs:
       - run: pnpm format:check
       - run: pnpm typecheck
       - run: pnpm test
+      # Build, pack and install the npm package outside the workspace, then
+      # drive the installed bin over stdio (what `npx -y 1040kit` runs).
+      - run: pnpm --filter 1040kit test:pack
