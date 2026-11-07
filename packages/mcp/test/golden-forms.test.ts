@@ -1,7 +1,7 @@
 /**
  * Real engine × real field maps: every 2025 engine golden return must print
  * every computed line somewhere on the PDF (no `unmapped`). Catches label
- * drift between the engine's form/line labels and src/output/maps/2025.
+ * drift between the engine's form/line labels and assets/maps/2025.
  */
 import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';

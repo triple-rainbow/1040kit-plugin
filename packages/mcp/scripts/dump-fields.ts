@@ -1,7 +1,7 @@
 /**
  * Dump every fillable field of an IRS PDF: name, type, tooltip (/TU, which
  * the IRS uses to say which line a field is), page and position. Used to
- * hand-build src/output/maps/<year>/<form>.json.
+ * hand-build assets/maps/<year>/<form>.json.
  *
  *   node --import tsx scripts/dump-fields.ts assets/irs/2025/f1040.pdf
  */

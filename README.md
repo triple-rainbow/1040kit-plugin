@@ -20,7 +20,7 @@ The engine is pure TypeScript with no dependencies: every number it produces is 
 
 ## Local testing
 
-Requires Node.js 20+ and pnpm.
+Requires Node.js 22+ and pnpm.
 
 ```bash
 pnpm install

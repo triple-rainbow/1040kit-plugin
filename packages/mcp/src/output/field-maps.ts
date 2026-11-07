@@ -1,4 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { FormId, TaxYear } from '@1040kit/engine';
 
@@ -83,12 +84,29 @@ export const FORM_TITLES: Record<FormId, string> = {
 export const formName = (f: FormId) =>
   FORM_TITLES[f].replace(/ \((?:you|spouse)\)$/, '');
 
-const url = (rel: string) => fileURLToPath(new URL(rel, import.meta.url));
+/**
+ * The package folder (the nearest one holding package.json). This module runs
+ * from src/output/ in development and from the bundled dist/bin.js once
+ * published, so asset paths are resolved from the package root, not from here.
+ */
+function packageRoot(): string {
+  let dir = dirname(fileURLToPath(import.meta.url));
+  while (!existsSync(join(dir, 'package.json'))) {
+    const up = dirname(dir);
+    if (up === dir) throw new Error('1040kit: package root not found');
+    dir = up;
+  }
+  return dir;
+}
+
+let root: string | undefined;
+const asset = (...parts: string[]) =>
+  join((root ??= packageRoot()), 'assets', ...parts);
 
 export const assetPath = (year: TaxYear, pdf: string) =>
-  url(`../../assets/irs/${year}/${pdf}.pdf`);
+  asset('irs', String(year), `${pdf}.pdf`);
 const mapPath = (year: TaxYear, pdf: string) =>
-  url(`./maps/${year}/${pdf}.json`);
+  asset('maps', String(year), `${pdf}.json`);
 
 export function hasForms(year: TaxYear): boolean {
   return (
