@@ -1,0 +1,91 @@
+{
+  "name": "MFJ, both spouses self-employed, SEP contribution",
+  "source": "Worked by hand from the 2025 Schedule C, SE, Schedule 1, Form 8995, Pub. 560 and Form 1040 instructions. Taxpayer Sch C: 80,000 - advertising 5,000 = 75,000; SE 4a 69,262.50 -> 69,263; 10 = 8,588.61 -> 8,589; 11 = 2,008.63 -> 2,009; 12 = 10,598; 13 = 5,299. Spouse Sch C: 30,000 - supplies 2,000 = 28,000; 4a 25,858; 10 = 3,206.39 -> 3,206; 11 = 749.88 -> 750; 12 = 3,956; 13 = 1,978. SEP (Pub. 560 self-employed rate 20%): limit 20% x (75,000 - 5,299) = 13,940; contribution 10,000. Sch 1: 3 = 103,000; 15 = 7,277; 16 = 10,000; 26 = 17,277. 1040: 11a = 85,723; 12e 31,500. 8995: QBI 75,000 - 5,299 - 10,000 = 59,701 + 28,000 - 1,978 = 26,022 -> 85,723; 5 = 17,145 (17,144.60); 11 = 54,223; 14 = 10,845 (10,844.60); 15 = 10,845. Line 15 = 43,378; 16 Tax Table row 43,350-43,400 MFJ = 4,728; 23 = 14,554; 24 = 19,282; 26 = 15,000; 37 = 4,282.",
+  "facts": {
+    "taxYear": 2025,
+    "filingStatus": "mfj",
+    "taxpayer": {
+      "id": "taxpayer",
+      "dateOfBirth": "1979-03-14",
+      "hasValidSsn": true,
+      "canBeClaimedAsDependent": false
+    },
+    "spouse": {
+      "id": "spouse",
+      "dateOfBirth": "1981-08-08",
+      "hasValidSsn": true,
+      "canBeClaimedAsDependent": false
+    },
+    "dependents": [],
+    "w2s": [],
+    "int1099s": [],
+    "div1099s": [],
+    "nec1099s": [
+      {
+        "id": "nec_1",
+        "owner": "taxpayer",
+        "nonemployeeComp": 8000000
+      },
+      {
+        "id": "nec_2",
+        "owner": "spouse",
+        "nonemployeeComp": 3000000
+      }
+    ],
+    "misc1099s": [],
+    "k1099s": [],
+    "businesses": [
+      {
+        "owner": "taxpayer",
+        "name": "Consulting",
+        "expenses": {
+          "advertising": 500000
+        }
+      },
+      {
+        "owner": "spouse",
+        "name": "Tutoring",
+        "expenses": {
+          "supplies": 200000
+        }
+      }
+    ],
+    "adjustments": {
+      "sepContributions": {
+        "taxpayer": 1000000
+      }
+    },
+    "payments": {
+      "estimatedTaxPayments": 1500000
+    },
+    "e1098s": [],
+    "rentals": []
+  },
+  "expect": {
+    "schC.netProfit.taxpayer": 75000,
+    "schC.netProfit.spouse": 28000,
+    "seTax.taxpayer": 10598,
+    "seTax.spouse": 3956,
+    "seDeduction": 7277,
+    "sepDeduction": 10000,
+    "businessIncome": 103000,
+    "agi": 85723,
+    "qbiComponent": 17145,
+    "qbiDeduction": 10845,
+    "taxableIncome": 43378,
+    "tax": 4728,
+    "otherTaxes": 14554,
+    "totalTax": 19282,
+    "summary.refundOrOwed": -4282
+  },
+  "forms": [
+    "f1040",
+    "sch1",
+    "sch2",
+    "schC.taxpayer",
+    "schC.spouse",
+    "schSE.taxpayer",
+    "schSE.spouse",
+    "f8995"
+  ]
+}

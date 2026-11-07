@@ -1,0 +1,84 @@
+{
+  "name": "Single freelancer: two 1099-NECs, expenses, mileage, simplified home office, SEHI",
+  "source": "Worked by hand from the 2025 Schedule C, Schedule SE, Schedule 1, Form 8995 and Form 1040 instructions. Sch C line 1: 35,000.25 + 24,999.80 = 60,000.05 -> 60,000; expenses: 9 car 3,000 mi x $0.70 = 2,100; 18 office 600; 22 supplies 1,200.40 -> 1,200; 24b meals 400 x 50% = 200; 25 utilities 480; 28 = 4,580; 29 = 55,420; 30 simplified 200 sq ft x $5 = 1,000; 31 = 54,420. Sch SE: 4a 54,420 x 0.9235 = 50,256.87 -> 50,257; 10 x 12.4% = 6,231.87 -> 6,232; 11 x 2.9% = 1,457.45 -> 1,457; 12 = 7,689; 13 = 3,844.50 -> 3,845. Sch 1: 3 = 54,420; 15 = 3,845; 17 SEHI min(3,600, 54,420 - 3,845) = 3,600; 26 = 7,445. 1040: 9 = 54,420; 11a = 46,975; 12e 15,750. Form 8995: 1c QBI = 54,420 - 3,845 - 3,600 = 46,975; 5 = 9,395; 11 = 46,975 - 15,750 = 31,225; 14 = 6,245; 15 = 6,245. 1040 line 15 = 24,980; 16 Tax Table row 24,950-25,000 single = 2,759; 23 = 7,689; 24 = 10,448; 26 = 8,000; 37 = 2,448.",
+  "facts": {
+    "taxYear": 2025,
+    "filingStatus": "single",
+    "taxpayer": {
+      "id": "taxpayer",
+      "dateOfBirth": "1993-11-02",
+      "hasValidSsn": true,
+      "canBeClaimedAsDependent": false
+    },
+    "dependents": [],
+    "w2s": [],
+    "int1099s": [],
+    "div1099s": [],
+    "nec1099s": [
+      {
+        "id": "nec_1",
+        "owner": "taxpayer",
+        "payerToken": "{{PAYER:nec_1}}",
+        "nonemployeeComp": 3500025
+      },
+      {
+        "id": "nec_2",
+        "owner": "taxpayer",
+        "payerToken": "{{PAYER:nec_2}}",
+        "nonemployeeComp": 2499980
+      }
+    ],
+    "misc1099s": [],
+    "k1099s": [],
+    "businesses": [
+      {
+        "owner": "taxpayer",
+        "name": "Pat Example Design",
+        "expenses": {
+          "supplies": 120040,
+          "office": 60000,
+          "utilities": 48000,
+          "meals": 40000
+        },
+        "vehicle": {
+          "businessMiles": 3000
+        },
+        "homeOffice": {
+          "method": "simplified",
+          "squareFeet": 200
+        }
+      }
+    ],
+    "adjustments": {
+      "selfEmployedHealthInsurance": {
+        "taxpayer": 360000
+      }
+    },
+    "payments": {
+      "estimatedTaxPayments": 800000
+    },
+    "e1098s": [],
+    "rentals": []
+  },
+  "expect": {
+    "schC.grossReceipts.taxpayer": 60000,
+    "schC.totalExpenses.taxpayer": 4580,
+    "schC.tentativeProfit.taxpayer": 55420,
+    "schC.homeOffice.taxpayer": 1000,
+    "schC.netProfit.taxpayer": 54420,
+    "se.netEarnings.taxpayer": 50257,
+    "seTax.taxpayer": 7689,
+    "seDeduction": 3845,
+    "sehiDeduction": 3600,
+    "adjustments": 7445,
+    "agi": 46975,
+    "qbiTaxableIncome": 31225,
+    "qbiDeduction": 6245,
+    "taxableIncome": 24980,
+    "tax": 2759,
+    "otherTaxes": 7689,
+    "totalTax": 10448,
+    "summary.refundOrOwed": -2448
+  },
+  "forms": ["f1040", "sch1", "sch2", "schC.taxpayer", "schSE.taxpayer", "f8995"]
+}

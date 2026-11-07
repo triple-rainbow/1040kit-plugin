@@ -1,0 +1,59 @@
+{
+  "name": "Single, one W-2 plus bank interest",
+  "source": "Worked by hand from the 2025 Form 1040 and i1040gi. Line 1a 52,345.67 -> 52,346; 2b 120; 9 = 11a = 52,466; 12e 15,750 (single); 15 = 36,716; 16 from the 2025 Tax Table row 36,700-36,750 Single = 4,169; 25a 5,200; 34 = 5,200 - 4,169 = 1,031.",
+  "facts": {
+    "taxYear": 2025,
+    "filingStatus": "single",
+    "taxpayer": {
+      "id": "taxpayer",
+      "dateOfBirth": "1991-04-12",
+      "hasValidSsn": true,
+      "canBeClaimedAsDependent": false
+    },
+    "dependents": [],
+    "w2s": [
+      {
+        "id": "w2_1",
+        "owner": "taxpayer",
+        "employerEinToken": "{{EIN:w2_1}}",
+        "wages": 5234567,
+        "federalWithheld": 520000,
+        "ssWages": 5234567,
+        "ssTax": 324543,
+        "medicareWages": 5234567,
+        "medicareTax": 75901
+      }
+    ],
+    "int1099s": [
+      {
+        "id": "int_1",
+        "owner": "taxpayer",
+        "payerToken": "{{PAYER:int_1}}",
+        "interest": 12000
+      }
+    ],
+    "div1099s": [],
+    "nec1099s": [],
+    "misc1099s": [],
+    "k1099s": [],
+    "businesses": [],
+    "e1098s": [],
+    "rentals": []
+  },
+  "expect": {
+    "wages": 52346,
+    "taxableInterest": 120,
+    "totalIncome": 52466,
+    "agi": 52466,
+    "standardDeduction": 15750,
+    "deductions": 15750,
+    "taxableIncome": 36716,
+    "tax": 4169,
+    "totalTax": 4169,
+    "totalWithholding": 5200,
+    "totalPayments": 5200,
+    "refundOrOwed": 1031,
+    "summary.refundOrOwed": 1031
+  },
+  "forms": ["f1040"]
+}

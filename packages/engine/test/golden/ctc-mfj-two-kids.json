@@ -1,0 +1,68 @@
+{
+  "name": "MFJ, one W-2, two children under 17 (CTC fully used)",
+  "source": "Worked by hand from the 2025 Form 1040, Schedule 8812 and their instructions. 1a 100,000; 11a 100,000; 12e 31,500; 15 = 68,500; 16 Tax Table row 68,500-68,550 MFJ = 7,746. Sch 8812: 3 = 100,000; 4 = 2; 5 = 4,400; 8 = 4,400; 10 = 0 (MAGI under 400,000); 12 = 4,400; 13 (Credit Limit Worksheet A) = 7,746; 14 = 4,400. 1040: 19 = 4,400; 22 = 3,346; 24 = 3,346; 25a 8,000; 34 = 4,654.",
+  "facts": {
+    "taxYear": 2025,
+    "filingStatus": "mfj",
+    "taxpayer": {
+      "id": "taxpayer",
+      "dateOfBirth": "1984-10-10",
+      "hasValidSsn": true,
+      "canBeClaimedAsDependent": false
+    },
+    "spouse": {
+      "id": "spouse",
+      "dateOfBirth": "1986-12-12",
+      "hasValidSsn": true,
+      "canBeClaimedAsDependent": false
+    },
+    "dependents": [
+      {
+        "id": "dependent_1",
+        "dateOfBirth": "2014-05-05",
+        "relationship": "child",
+        "monthsLivedWithTaxpayer": 12,
+        "hasValidSsn": true,
+        "providedOverHalfOwnSupport": false
+      },
+      {
+        "id": "dependent_2",
+        "dateOfBirth": "2019-08-20",
+        "relationship": "child",
+        "monthsLivedWithTaxpayer": 12,
+        "hasValidSsn": true,
+        "providedOverHalfOwnSupport": false
+      }
+    ],
+    "w2s": [
+      {
+        "id": "w2_1",
+        "owner": "taxpayer",
+        "wages": 10000000,
+        "federalWithheld": 800000,
+        "ssWages": 10000000,
+        "ssTax": 620000,
+        "medicareWages": 10000000,
+        "medicareTax": 145000
+      }
+    ],
+    "int1099s": [],
+    "div1099s": [],
+    "nec1099s": [],
+    "misc1099s": [],
+    "k1099s": [],
+    "businesses": [],
+    "e1098s": [],
+    "rentals": []
+  },
+  "expect": {
+    "taxableIncome": 68500,
+    "tax": 7746,
+    "ctc": 4400,
+    "childCredits": 4400,
+    "actc": 0,
+    "totalTax": 3346,
+    "summary.refundOrOwed": 4654
+  },
+  "forms": ["f1040", "sch8812"]
+}

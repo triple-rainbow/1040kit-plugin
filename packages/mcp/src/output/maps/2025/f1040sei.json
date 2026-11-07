@@ -1,0 +1,60 @@
+{
+  "pdf": "f1040sei",
+  "note": "Child rows: the engine's '<line>:<child n>' lines are printed by fillSchEIC from facts and identity.dependents. Line 2 (the child's SSN) is always left blank for the user.",
+  "header": {
+    "name": "Page1[0].f1_01[0]",
+    "ssn": "Page1[0].f1_02[0]"
+  },
+  "lines": {},
+  "consumed": ["1", "2", "3", "4a", "4b", "5", "6"],
+  "childRows": [
+    {
+      "name": "Page1[0].f1_03[0]",
+      "ssn": "Page1[0].f1_06[0]",
+      "year": [
+        "Year1_ReadOrder[0].f1_09[0]",
+        "Year1_ReadOrder[0].f1_10[0]",
+        "Year1_ReadOrder[0].f1_11[0]",
+        "Year1_ReadOrder[0].f1_12[0]"
+      ],
+      "studentYes": "Line4a_Child1_ReadOrder[0].Yes_ReadOrder[0].c1_1[0]",
+      "studentNo": "Line4a_Child1_ReadOrder[0].c1_1[0]",
+      "disabledYes": "Line4b_Child1_ReadOrder[0].Yes_ReadOrder[0].c1_4[0]",
+      "disabledNo": "Line4b_Child1_ReadOrder[0].c1_4[0]",
+      "relationship": "Page1[0].f1_21[0]",
+      "months": "Line6_Child1_ReadOrder[0].f1_24[0]"
+    },
+    {
+      "name": "Page1[0].f1_04[0]",
+      "ssn": "Page1[0].f1_07[0]",
+      "year": [
+        "Year2_ReadOrder[0].f1_13[0]",
+        "Year2_ReadOrder[0].f1_14[0]",
+        "Year2_ReadOrder[0].f1_15[0]",
+        "Year2_ReadOrder[0].f1_16[0]"
+      ],
+      "studentYes": "Line4a_Child2_ReadOrder[0].Yes_ReadOrder[0].c1_2[0]",
+      "studentNo": "Line4a_Child2_ReadOrder[0].c1_2[0]",
+      "disabledYes": "Line4b_Child2_ReadOrder[0].Yes_ReadOrder[0].c1_5[0]",
+      "disabledNo": "Line4b_Child2_ReadOrder[0].c1_5[0]",
+      "relationship": "Page1[0].f1_22[0]",
+      "months": "Line6_Child2_ReadOrder[0].f1_25[0]"
+    },
+    {
+      "name": "Page1[0].f1_05[0]",
+      "ssn": "Page1[0].f1_08[0]",
+      "year": [
+        "Page1[0].f1_17[0]",
+        "Page1[0].f1_18[0]",
+        "Page1[0].f1_19[0]",
+        "Page1[0].f1_20[0]"
+      ],
+      "studentYes": "Line4a_Child3_Yes_ReadOrder[0].c1_3[0]",
+      "studentNo": "Page1[0].c1_3[0]",
+      "disabledYes": "Line4b_Child3_Yes_ReadOrder[0].c1_6[0]",
+      "disabledNo": "Page1[0].c1_6[0]",
+      "relationship": "Page1[0].f1_23[0]",
+      "months": "Page1[0].f1_26[0]"
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+# 1040kit for Codex: add this to ~/.codex/config.toml
+# (or run: codex mcp add 1040kit -- npx -y 1040kit)
+# Requires Node.js 20 or later. See docs/install.md.
+
+[mcp_servers.1040kit]
+command = "npx"
+args = ["-y", "1040kit"]

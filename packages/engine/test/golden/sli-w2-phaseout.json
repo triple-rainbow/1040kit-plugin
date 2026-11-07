@@ -1,0 +1,82 @@
+{
+  "name": "Single, W-2 90,000 and Form 1098-E: student loan interest in the phase-out",
+  "source": "Worked by hand from the i1040gi 2025 Student Loan Interest Deduction Worksheet (Schedule 1 line 21): line 1 = min(2,800, 2,500) = 2,500; line 2 (1040 line 9) 90,000; line 3 = 0; line 4 = 90,000; line 5 = 85,000; line 6 = 5,000; line 7 = 5,000 / 15,000 = 0.333; line 8 = 832.50 -> 833; line 9 = 1,667. Schedule 1 line 26 = 1,667; 1040 11 = 88,333; 12e 15,750; 15 = 72,583; 16 = 2025 Tax Table row 72,550-72,600 single = 10,881; 25a 9,000; 37 = 1,881.",
+  "facts": {
+    "taxYear": 2025,
+    "filingStatus": "single",
+    "taxpayer": {
+      "id": "taxpayer",
+      "dateOfBirth": "1990-05-01",
+      "hasValidSsn": true,
+      "canBeClaimedAsDependent": false,
+      "livedInUsOverHalfYear": true,
+      "qualifyingChildOfAnother": false
+    },
+    "dependents": [],
+    "w2s": [
+      {
+        "id": "w2_1",
+        "owner": "taxpayer",
+        "wages": 9000000,
+        "federalWithheld": 900000,
+        "ssWages": 9000000,
+        "ssTax": 558000,
+        "medicareWages": 9000000,
+        "medicareTax": 130500
+      }
+    ],
+    "int1099s": [],
+    "div1099s": [],
+    "nec1099s": [],
+    "misc1099s": [],
+    "k1099s": [],
+    "e1098s": [
+      {
+        "id": "e1098_1",
+        "owner": "taxpayer",
+        "interest": 280000
+      }
+    ],
+    "businesses": [],
+    "rentals": [],
+    "outOfScope": {
+      "retirementDistributions": false,
+      "socialSecurityBenefits": false,
+      "stockOrCryptoSales": false,
+      "k1Income": false,
+      "foreignIncomeOrAccounts": false,
+      "unemploymentCompensation": false,
+      "hsa": false,
+      "educationExpenses": false,
+      "wantsToItemize": false,
+      "marriedFilingSeparately": false,
+      "other": []
+    },
+    "digitalAssetActivity": false,
+    "screening": {
+      "hasRentalOrRoyaltyIncome": false,
+      "paidStudentLoanInterest": true
+    },
+    "eitc": {
+      "priorDisallowance": false
+    },
+    "studentLoan": {
+      "legallyObligated": true,
+      "qualifiedLoan": true
+    }
+  },
+  "expect": {
+    "studentLoan.interestPaid": 2500,
+    "studentLoan.magi": 90000,
+    "studentLoan.phaseoutRatio": 333,
+    "studentLoanInterestDeduction": 1667,
+    "adjustments": 1667,
+    "agi": 88333,
+    "taxableIncome": 72583,
+    "tax": 10881,
+    "amountOwed": 1881,
+    "summary.refundOrOwed": -1881,
+    "complete": true
+  },
+  "forms": ["f1040", "sch1"]
+}

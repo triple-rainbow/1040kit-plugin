@@ -1,0 +1,79 @@
+{
+  "name": "Head of household, low tax, two children: CTC limited by tax, rest refundable as ACTC",
+  "source": "Worked by hand from the 2025 Form 1040, Schedule 8812 and their instructions. 1a 30,000; 12e 23,625; 15 = 6,375; 16 Tax Table row 6,350-6,400 HoH = 638. Sch 8812: 5 = 4,400; 8 = 4,400; 12 = 4,400; 13 = 638; 14 = 638; 16a = 3,762; 16b = 2 x 1,700 = 3,400; 17 = 3,400; 18a = 30,000; 19 = 27,500; 20 = 4,125; 16b < 5,100 so 27 = min(17, 20) = 3,400. 1040: 19 = 638; 22 = 0; 24 = 0; 25a 1,000; 28 = 3,400; 33 = 4,400; 34 = 4,400. EIC (added with the EIC in v1): earned income 30,000 = AGI 30,000, HoH, 2 qualifying children; 2025 EIC Table row 30,000-30,050, HoH 2 children = 5,746 (Worksheet A line 4 \"same\" -> line 6 = line 2). 27a 5,746; 32 = 5,746 + 3,400 = 9,146; 33 = 1,000 + 9,146 = 10,146; 34 = 10,146.",
+  "facts": {
+    "taxYear": 2025,
+    "filingStatus": "hoh",
+    "taxpayer": {
+      "id": "taxpayer",
+      "dateOfBirth": "1990-01-20",
+      "hasValidSsn": true,
+      "canBeClaimedAsDependent": false,
+      "livedInUsOverHalfYear": true,
+      "qualifyingChildOfAnother": false
+    },
+    "dependents": [
+      {
+        "id": "dependent_1",
+        "dateOfBirth": "2016-01-01",
+        "relationship": "child",
+        "monthsLivedWithTaxpayer": 12,
+        "hasValidSsn": true,
+        "providedOverHalfOwnSupport": false
+      },
+      {
+        "id": "dependent_2",
+        "dateOfBirth": "2019-01-01",
+        "relationship": "child",
+        "monthsLivedWithTaxpayer": 12,
+        "hasValidSsn": true,
+        "providedOverHalfOwnSupport": false
+      }
+    ],
+    "w2s": [
+      {
+        "id": "w2_1",
+        "owner": "taxpayer",
+        "wages": 3000000,
+        "federalWithheld": 100000,
+        "ssWages": 3000000,
+        "ssTax": 186000,
+        "medicareWages": 3000000,
+        "medicareTax": 43500
+      }
+    ],
+    "int1099s": [],
+    "div1099s": [],
+    "nec1099s": [],
+    "misc1099s": [],
+    "k1099s": [],
+    "businesses": [],
+    "e1098s": [],
+    "rentals": [],
+    "eitc": {
+      "priorDisallowance": false
+    }
+  },
+  "expect": {
+    "standardDeduction": 23625,
+    "taxableIncome": 6375,
+    "tax": 638,
+    "childCredits": 638,
+    "actc": 3400,
+    "totalTax": 0,
+    "totalPayments": 10146,
+    "summary.refundOrOwed": 10146,
+    "eic": 5746,
+    "ctcOdcTotal": 4400,
+    "ctcOdcAfterPhaseout": 4400,
+    "actc.unused": 3762,
+    "actc.childLimit": 3400,
+    "actc.limit": 3400,
+    "actcEarnedIncome": 30000,
+    "actc.earnedOverThreshold": 27500,
+    "actc.earnedIncomeCredit": 4125,
+    "actc.usesPartIIB": 0,
+    "actc.partIIB": 0
+  },
+  "forms": ["f1040", "sch8812", "schEIC"]
+}

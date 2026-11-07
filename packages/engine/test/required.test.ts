@@ -1,0 +1,206 @@
+import assert from 'node:assert/strict';
+import { test } from 'node:test';
+
+import { computeReturn } from '../src/compute.ts';
+import { requiredFacts } from '../src/required.ts';
+import {
+  emptyFacts,
+  type OutOfScopeFlags,
+  type TaxFacts,
+} from '../src/types.ts';
+import { makeFacts, nec, screeningNo, w2 } from './helpers.ts';
+
+/** All screening answers given as "no". */
+const screened: OutOfScopeFlags = {
+  retirementDistributions: false,
+  socialSecurityBenefits: false,
+  stockOrCryptoSales: false,
+  k1Income: false,
+  foreignIncomeOrAccounts: false,
+  unemploymentCompensation: false,
+  hsa: false,
+  educationExpenses: false,
+  wantsToItemize: false,
+  marriedFilingSeparately: false,
+  other: [],
+};
+
+const ready = (patch: Partial<TaxFacts> = {}) =>
+  makeFacts({
+    outOfScope: screened,
+    screening: screeningNo,
+    digitalAssetActivity: false,
+    ...patch,
+  });
+
+const paths = (f: TaxFacts) => requiredFacts(f).map((m) => m.path);
+
+test('required facts: empty facts ask filing status first, blocking', () => {
+  const missing = requiredFacts(emptyFacts(2025));
+  assert.equal(missing[0]!.path, 'filingStatus');
+  assert.equal(missing[0]!.blocking, true);
+});
+
+test('required facts are sorted blocking first, then by priority', () => {
+  const missing = requiredFacts(emptyFacts(2025));
+  let seenNonBlocking = false;
+  let lastPriority = -Infinity;
+  for (const m of missing) {
+    if (!m.blocking) seenNonBlocking = true;
+    else
+      assert.ok(
+        !seenNonBlocking,
+        `${m.path} blocking after a non-blocking item`
+      );
+    if (m.blocking === missing[0]!.blocking) {
+      assert.ok(m.priority >= lastPriority);
+      lastPriority = m.priority;
+    }
+  }
+});
+
+test('every question is plain English and at most 140 characters', () => {
+  const f = emptyFacts(2025);
+  f.filingStatus = 'mfj';
+  f.spouse = { id: 'spouse' };
+  f.dependents = [{ id: 'dependent_1' }];
+  f.nec1099s = [nec('nec_1', 100000)];
+  f.misc1099s = [{ id: 'misc_1', owner: 'taxpayer', rents: 1000 }];
+  const missing = requiredFacts(f);
+  assert.ok(missing.length > 15);
+  for (const m of missing) {
+    assert.ok(m.question.length <= 140, `${m.path}: ${m.question.length}`);
+    assert.ok(m.question.endsWith('?'), m.path);
+    assert.ok(m.why.length > 0, m.path);
+    assert.doesNotMatch(m.question, /\{\{|\[|_/, m.path);
+  }
+});
+
+test('MFJ with no spouse DOB asks for it, not blocking, mentions the senior deduction', () => {
+  const f = ready({
+    filingStatus: 'mfj',
+    spouse: { id: 'spouse', hasValidSsn: true, canBeClaimedAsDependent: false },
+    w2s: [w2('w2_1', 5000000)],
+  });
+  const m = requiredFacts(f).find((x) => x.path === 'spouse.dateOfBirth');
+  assert.ok(m);
+  assert.equal(m.blocking, false);
+  assert.match(m.why, /senior/i);
+});
+
+test('a dependent missing dateOfBirth is blocking', () => {
+  const f = ready({
+    dependents: [
+      {
+        id: 'dependent_1',
+        relationship: 'child',
+        monthsLivedWithTaxpayer: 12,
+        hasValidSsn: true,
+      },
+    ],
+  });
+  const m = requiredFacts(f).find(
+    (x) => x.path === 'dependents[dependent_1].dateOfBirth'
+  );
+  assert.ok(m);
+  assert.equal(m.blocking, true);
+});
+
+test('a 1099-NEC with no business asks for businesses[taxpayer], blocking', () => {
+  const f = ready({ nec1099s: [nec('nec_1', 100000)] });
+  const m = requiredFacts(f).find((x) => x.path === 'businesses[taxpayer]');
+  assert.ok(m);
+  assert.equal(m.blocking, true);
+  const withBiz = ready({
+    nec1099s: [nec('nec_1', 100000)],
+    businesses: [{ owner: 'taxpayer', expenses: {} }],
+  });
+  assert.ok(!paths(withBiz).includes('businesses[taxpayer]'));
+});
+
+test('screening questions for every OutOfScopeFlags key and digital assets while undefined', () => {
+  const f = makeFacts({ w2s: [w2('w2_1', 5000000)] });
+  const missing = requiredFacts(f);
+  const keys = [...Object.keys(screened), 'digitalAssetActivity'];
+  for (const key of keys) {
+    const path = key === 'digitalAssetActivity' ? key : `outOfScope.${key}`;
+    const m = missing.find((x) => x.path === path);
+    assert.ok(m, path);
+    assert.equal(m.blocking, true, path);
+    assert.ok(m.priority >= 100, `${path} asked after the core facts`);
+  }
+  const retirement = missing.find(
+    (x) => x.path === 'outOfScope.retirementDistributions'
+  );
+  assert.match(retirement!.question, /1099-R/);
+  // answered (false) -> no question
+  assert.deepEqual(requiredFacts(ready({ w2s: [w2('w2_1', 5000000)] })), []);
+});
+
+test('screening questions come after core facts', () => {
+  const missing = requiredFacts(emptyFacts(2025));
+  const fs = missing.findIndex((m) => m.path === 'filingStatus');
+  const screen = missing.findIndex((m) => m.path.startsWith('outOfScope.'));
+  assert.ok(fs < screen);
+});
+
+test('a complete simple return has no missing facts and is complete', () => {
+  const r = computeReturn(ready({ w2s: [w2('w2_1', 5000000, 500000)] }));
+  assert.deepEqual(r.missing, []);
+  assert.equal(r.complete, true);
+});
+
+test('missing blocking fact makes the return incomplete', () => {
+  const r = computeReturn(makeFacts({ w2s: [w2('w2_1', 5000000)] }));
+  assert.equal(r.complete, false);
+  assert.ok(r.missing.length > 0);
+});
+
+test('HoH with no dependents asks about dependents', () => {
+  const f = ready({ filingStatus: 'hoh' });
+  assert.ok(paths(f).includes('dependents'));
+});
+
+test('dependent under 17 needs SSN answer; taxpayer SSN validity asked when it matters', () => {
+  const f = ready({
+    dependents: [
+      {
+        id: 'dependent_1',
+        dateOfBirth: '2015-01-01',
+        relationship: 'child',
+        monthsLivedWithTaxpayer: 12,
+      },
+    ],
+  });
+  assert.ok(paths(f).includes('dependents[dependent_1].hasValidSsn'));
+  const g = ready({
+    dependents: [
+      {
+        id: 'dependent_1',
+        dateOfBirth: '2015-01-01',
+        relationship: 'child',
+        monthsLivedWithTaxpayer: 12,
+        hasValidSsn: true,
+      },
+    ],
+  });
+  delete g.taxpayer.hasValidSsn;
+  assert.ok(paths(g).includes('taxpayer.hasValidSsn'));
+});
+
+test('rental/royalty and student loan screening questions replace the old out-of-scope flags', () => {
+  const missing = requiredFacts(makeFacts());
+  const byPath = new Map(missing.map((m) => [m.path, m]));
+  for (const p of [
+    'screening.hasRentalOrRoyaltyIncome',
+    'screening.paidStudentLoanInterest',
+  ]) {
+    const m = byPath.get(p);
+    assert.ok(m, p);
+    assert.equal(m.blocking, true);
+    assert.ok(m.priority >= 100, `${p} is in the screening band`);
+  }
+  assert.ok(!byPath.has('outOfScope.rentalIncome'));
+  assert.ok(!byPath.has('outOfScope.studentLoanInterest'));
+  assert.ok(!paths(ready()).some((p) => p.startsWith('screening.')));
+});

@@ -1,0 +1,37 @@
+{
+  "name": "1040kit",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "1040kit — AI tax software that runs on your computer (MCP server)",
+  "license": "AGPL-3.0-only",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "1040kit": "./src/bin.ts"
+  },
+  "scripts": {
+    "start": "node --import tsx src/bin.ts",
+    "test": "node --import tsx --test 'test/**/*.test.ts'",
+    "typecheck": "tsc --noEmit",
+    "widget:harness": "node --import tsx scripts/widget-harness/build.ts"
+  },
+  "dependencies": {
+    "@1040kit/engine": "workspace:*",
+    "@modelcontextprotocol/ext-apps": "1.7.5",
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "@tesseract.js-data/eng": "^1.0.0",
+    "csv-parse": "^7.0.3",
+    "pdf-lib": "^1.17.1",
+    "tesseract.js": "^7.0.0",
+    "unpdf": "^2.1.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@napi-rs/canvas": "^1.1.0",
+    "@types/node": "^26.6.6",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  }
+}

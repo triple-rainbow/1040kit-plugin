@@ -1,0 +1,102 @@
+import type { EngineApi, ReturnResult } from '@1040kit/engine';
+
+import { drivers } from '../calc.ts';
+import type { StoreData } from '../store/types.ts';
+import { currentAcknowledgment } from './acknowledgment.ts';
+
+const usd = (v: number) => `$${Math.abs(v).toLocaleString('en-US')}`;
+
+const STATUS: Record<string, string> = {
+  single: 'Single',
+  mfj: 'Married filing jointly',
+  hoh: 'Head of household',
+};
+
+/** Plain-English summary. Never contains SSNs, EINs or account numbers. */
+export function summaryMarkdown(
+  data: StoreData,
+  result: ReturnResult,
+  engine: EngineApi
+): string {
+  const s = result.summary;
+  const out: string[] = [];
+  out.push(`# Your ${result.taxYear} federal return — summary`, '');
+  out.push(
+    `Prepared with 1040kit on your computer. This is not tax advice: you are the preparer, and you are responsible for the return you sign and file.`,
+    ''
+  );
+  if (result.filingStatus)
+    out.push(
+      `**Filing status:** ${STATUS[result.filingStatus] ?? result.filingStatus}`,
+      ''
+    );
+  out.push('| | Amount |', '|---|---:|');
+  out.push(`| Total income | ${usd(s.totalIncome)} |`);
+  out.push(`| Adjusted gross income | ${usd(s.agi)} |`);
+  out.push(`| Deductions | ${usd(s.deductions)} |`);
+  out.push(`| Taxable income | ${usd(s.taxableIncome)} |`);
+  out.push(`| Total tax | ${usd(s.totalTax)} |`);
+  out.push(
+    `| Total payments and refundable credits | ${usd(s.totalPayments)} |`
+  );
+  out.push(
+    s.refundOrOwed >= 0
+      ? `| **Refund** | **${usd(s.refundOrOwed)}** |`
+      : `| **Amount you owe** | **${usd(s.refundOrOwed)}** |`
+  );
+  out.push('');
+
+  const top = drivers(result);
+  if (top.length) {
+    out.push('## What drives the result', '');
+    for (const d of top) {
+      out.push(`- **${d.label}: ${d.value < 0 ? '-' : ''}${usd(d.value)}**`);
+      let expl;
+      try {
+        expl = engine.explainLine(result, d.id, 0);
+      } catch {
+        expl = null;
+      }
+      if (expl) {
+        out.push(`  - How: ${expl.node.trace.formula}`);
+        for (const c of expl.node.citations.slice(0, 2)) {
+          out.push(
+            `  - Source: [${c.docId}${c.section ? `, ${c.section}` : ''}](${c.url})`
+          );
+        }
+      }
+    }
+    out.push('');
+  }
+
+  if (result.unsupported.length) {
+    out.push('## Not handled by 1040kit', '');
+    for (const u of result.unsupported)
+      out.push(`- ${u.message} (planned: ${u.deferredTo})`);
+    out.push('');
+  }
+
+  out.push('## Forms', '');
+  out.push(result.forms.join(', '), '');
+  out.push('## Your sign-off', '');
+  const ack = currentAcknowledgment(data);
+  if (ack) {
+    out.push(
+      `On ${ack.at.slice(0, 10)} (${ack.at}) you acknowledged:`,
+      '',
+      `> ${ack.text}`,
+      ''
+    );
+  } else {
+    out.push(
+      'Not given yet for these numbers: 1040kit fills the forms only after you agree to the sign-off acknowledgment.',
+      ''
+    );
+  }
+  out.push('## Privacy', '');
+  out.push(
+    `1040kit never stores Social Security numbers or bank account numbers. Every SSN box on the filled PDF is blank: write them in yourself before you sign. The outputs folder is not encrypted; once your SSNs are on the printed return, keep it private. Your documents and return data never left this computer.`,
+    ''
+  );
+  return out.join('\n');
+}

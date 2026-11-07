@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "1040kit": {
+      "command": "./plugins/dev/1040kit-dev.sh",
+      "args": []
+    }
+  }
+}

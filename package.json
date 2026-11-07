@@ -1,0 +1,33 @@
+{
+  "name": "1040kit-plugin",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "1040kit: free AI tax software that runs on your computer. Tax engine, MCP server and AI assistant plugins.",
+  "license": "AGPL-3.0-only",
+  "repository": "https://github.com/triple-rainbow/1040kit-plugin",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "pnpm test:engine && pnpm test:mcp && pnpm test:plugins",
+    "test:engine": "pnpm --filter @1040kit/engine test",
+    "test:mcp": "pnpm --filter 1040kit test",
+    "test:plugins": "node --import tsx --test plugins/scripts/*.test.ts",
+    "typecheck": "pnpm -r typecheck",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.17",
+    "prettier": "^3.8.4",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  },
+  "packageManager": "pnpm@10.20.0",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  }
+}

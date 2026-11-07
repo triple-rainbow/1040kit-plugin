@@ -1,0 +1,5 @@
+node_modules
+pnpm-lock.yaml
+packages/mcp/assets
+.dev
+.widget-harness

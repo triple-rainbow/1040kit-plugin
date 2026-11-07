@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "1040kit": {
+      "command": "npx",
+      "args": ["-y", "1040kit"]
+    }
+  }
+}

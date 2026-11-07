@@ -1,0 +1,68 @@
+{
+  "name": "Single, age 35, no child, W-2 15,000: EIC in the phase-out",
+  "source": "Worked by hand from i1040gi 2025 line 27a: Step 4 (age 25-64: born 1990; main home in the U.S.; not a qualifying child of another; not a dependent), Worksheet A line 1 = 15,000 -> EIC Table row 15,000-15,050, single, no children = 312; line 3 AGI 15,000 = line 1 -> 312. 12e 15,750; 15 = 0; 16 = 0; 25a 300; 27a 312; 33 = 612; 34 = 612.",
+  "facts": {
+    "taxYear": 2025,
+    "filingStatus": "single",
+    "taxpayer": {
+      "id": "taxpayer",
+      "dateOfBirth": "1990-05-01",
+      "hasValidSsn": true,
+      "canBeClaimedAsDependent": false,
+      "livedInUsOverHalfYear": true,
+      "qualifyingChildOfAnother": false
+    },
+    "dependents": [],
+    "w2s": [
+      {
+        "id": "w2_1",
+        "owner": "taxpayer",
+        "wages": 1500000,
+        "federalWithheld": 30000,
+        "ssWages": 1500000,
+        "ssTax": 93000,
+        "medicareWages": 1500000,
+        "medicareTax": 21750
+      }
+    ],
+    "int1099s": [],
+    "div1099s": [],
+    "nec1099s": [],
+    "misc1099s": [],
+    "k1099s": [],
+    "e1098s": [],
+    "businesses": [],
+    "rentals": [],
+    "outOfScope": {
+      "retirementDistributions": false,
+      "socialSecurityBenefits": false,
+      "stockOrCryptoSales": false,
+      "k1Income": false,
+      "foreignIncomeOrAccounts": false,
+      "unemploymentCompensation": false,
+      "hsa": false,
+      "educationExpenses": false,
+      "wantsToItemize": false,
+      "marriedFilingSeparately": false,
+      "other": []
+    },
+    "digitalAssetActivity": false,
+    "screening": {
+      "hasRentalOrRoyaltyIncome": false,
+      "paidStudentLoanInterest": false
+    },
+    "eitc": {
+      "priorDisallowance": false
+    }
+  },
+  "expect": {
+    "agi": 15000,
+    "taxableIncome": 0,
+    "eic": 312,
+    "eic.qualifyingChildren": 0,
+    "totalPayments": 612,
+    "summary.refundOrOwed": 612,
+    "complete": true
+  },
+  "forms": ["f1040"]
+}

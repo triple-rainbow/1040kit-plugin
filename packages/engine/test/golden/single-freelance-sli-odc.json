@@ -1,0 +1,153 @@
+{
+  "name": "Single W-2 plus freelance (simplified home office, mileage), interest, student loan interest, a 3-year-old without an SSN (credit for other dependents)",
+  "source": "Worked by hand from the 2025 Form 1040, Schedules 1, 2, C, SE, 8812, Form 8995 and their instructions (the manual-test return of 2026-11-06). Sch C: 1 = 3 = 5 = 7 = 18,250; 9 = 3,000 mi x 70 cents = 2,100; 25 = 600; 27b = 48 = 1,300; 28 = 4,000; 29 = 14,250; 30 = 200 sq ft x $5 = 1,000; 31 = 13,250. Sch SE: 2 = 3 = 13,250; 4a = 4c = 6 = 12,236; 8a = 8d = 52,346; 9 = 176,100 - 52,346 = 123,754; 10 = 1,517; 11 = 355; 12 = 1,872; 13 = 936. Sch 1: 3 = 10 = 13,250; 15 = 936; 21 = 1,845 (MAGI under $85,000); 26 = 2,781. 1040: 1a 52,346; 2b 1,235; 9 = 66,831; 11a = 64,050; 12e 15,750; 13a 2,463; 15 = 45,837; 16 Tax Table single 45,800-45,850 = 5,261. Sch 8812: 1 = 3 = 64,050; 6 = 1 (no SSN); 7 = 8 = 500; 9 = 200,000; 10 = 11 = 0; 12 = 500; 13 = 5,261; 14 = 500; 16a = 0 (stop). Form 8995: 1i(c) = 2 = 4 = 13,250 - 936 = 12,314; 5 = 10 = 2,463; 11 = 64,050 - 15,750 = 48,300; 13 = 48,300; 14 = 9,660; 15 = 2,463. Sch 2: 4 = 21 = 1,872. 1040: 19 = 500; 22 = 4,761; 24 = 6,633; 25a 6,123; 37 = 510.",
+  "facts": {
+    "taxYear": 2025,
+    "taxpayer": {
+      "id": "taxpayer",
+      "canBeClaimedAsDependent": false,
+      "dateOfBirth": "1995-11-01",
+      "hasValidSsn": true
+    },
+    "dependents": [
+      {
+        "id": "dependent_1",
+        "dateOfBirth": "2022-10-20",
+        "monthsLivedWithTaxpayer": 12,
+        "hasValidSsn": false,
+        "relationship": "child",
+        "providedOverHalfOwnSupport": false
+      }
+    ],
+    "w2s": [
+      {
+        "id": "w2_1",
+        "owner": "taxpayer",
+        "wages": 5234567,
+        "federalWithheld": 612345,
+        "ssWages": 5234567,
+        "ssTax": 324543,
+        "medicareWages": 5234567,
+        "medicareTax": 75901
+      }
+    ],
+    "int1099s": [
+      {
+        "id": "int_1",
+        "owner": "taxpayer",
+        "interest": 123456,
+        "federalWithheld": 0
+      }
+    ],
+    "div1099s": [],
+    "nec1099s": [
+      {
+        "id": "nec_1",
+        "owner": "taxpayer",
+        "nonemployeeComp": 1825000,
+        "federalWithheld": 0
+      }
+    ],
+    "misc1099s": [],
+    "k1099s": [],
+    "e1098s": [
+      {
+        "id": "e1098_1",
+        "owner": "taxpayer",
+        "interest": 184500
+      }
+    ],
+    "businesses": [
+      {
+        "owner": "taxpayer",
+        "expenses": {
+          "other": 130000,
+          "utilities": 60000
+        },
+        "name": "freelance graphic design",
+        "homeOffice": {
+          "method": "simplified",
+          "squareFeet": 200
+        },
+        "vehicle": {
+          "businessMiles": 3000
+        }
+      }
+    ],
+    "rentals": [],
+    "outOfScope": {
+      "retirementDistributions": false,
+      "socialSecurityBenefits": false,
+      "stockOrCryptoSales": false,
+      "k1Income": false,
+      "foreignIncomeOrAccounts": false,
+      "unemploymentCompensation": false,
+      "hsa": false,
+      "educationExpenses": false,
+      "wantsToItemize": false,
+      "marriedFilingSeparately": false,
+      "other": []
+    },
+    "digitalAssetActivity": false,
+    "screening": {
+      "hasRentalOrRoyaltyIncome": false,
+      "paidStudentLoanInterest": true
+    },
+    "filingStatus": "single",
+    "studentLoan": {
+      "legallyObligated": true,
+      "qualifiedLoan": true
+    }
+  },
+  "expect": {
+    "schC.grossIncome.taxpayer": 18250,
+    "schC.expense.car_truck.taxpayer": 2100,
+    "schC.netProfit.taxpayer": 13250,
+    "se.netEarnings.taxpayer": 12236,
+    "se.netEarningsSubject.taxpayer": 12236,
+    "se.ssWagesAndTips.taxpayer": 52346,
+    "se.ssWageRoom.taxpayer": 123754,
+    "se.ssPortion.taxpayer": 1517,
+    "se.medicarePortion.taxpayer": 355,
+    "seTax.taxpayer": 1872,
+    "seDeduction": 936,
+    "studentLoanInterestDeduction": 1845,
+    "adjustments": 2781,
+    "agi": 64050,
+    "standardDeduction": 15750,
+    "taxableIncome": 45837,
+    "tax": 5261,
+    "odcDependents": 1,
+    "ctcOdcTotal": 500,
+    "ctcOdcThreshold": 200000,
+    "ctcOdcExcess": 0,
+    "ctcOdcAfterPhaseout": 500,
+    "creditLimit": 5261,
+    "childCredits": 500,
+    "actc.unused": 0,
+    "actc.limit": 0,
+    "actcEarnedIncome": 0,
+    "actc": 0,
+    "qbi.taxpayer": 12314,
+    "qbiBusinessSum": 12314,
+    "qbiTotal": 12314,
+    "qbiTaxableIncome": 48300,
+    "qbiIncomeBase": 48300,
+    "qbiIncomeLimit": 9660,
+    "qbiDeduction": 2463,
+    "otherTaxes": 1872,
+    "totalTax": 6633,
+    "totalPayments": 6123,
+    "summary.refundOrOwed": -510,
+    "complete": true
+  },
+  "forms": [
+    "f1040",
+    "sch1",
+    "sch2",
+    "schC.taxpayer",
+    "schSE.taxpayer",
+    "sch8812",
+    "f8995"
+  ]
+}

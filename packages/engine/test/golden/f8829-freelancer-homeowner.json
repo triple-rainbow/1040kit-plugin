@@ -1,0 +1,116 @@
+{
+  "name": "Single freelancer, homeowner, actual-expense home office with depreciation (Form 8829)",
+  "source": "Worked by hand from the 2025 Schedule C, i8829 and Pub. 946 Table A-7a. Sch C: 1 = 90,000; 22 supplies 5,000; 28 = 5,000; 29 = 85,000. Form 8829 (standard deduction): 1 = 300; 2 = 2,400; 3/7 = 12.5%; 8 = 85,000; 14 = 0; 15 = 85,000; column (b): 16 mortgage interest 14,000, 17 real estate taxes 6,000, 18 insurance 1,500, 20 repairs 1,000, 21 utilities 3,000; 23(b) = 25,500; 24 = 3,187.50 -> 3,188; 26 = 3,188; 27 = 3,188; 28 = 81,812; Part III: 37 = 400,000; 38 = 80,000; 39 = 320,000; 40 = 40,000; 41 = 2.564% (first used 2022); 42 = 1,025.60 -> 1,026; 30 = 1,026; 32 = 1,026; 33 = 1,026; 34 = 4,214; 36 = 4,214. Sch C 30 = 4,214; 31 = 80,786. Sch SE: 4a = 74,606; 10 = 9,251; 11 = 2,164; 12 = 11,415; 13 = 5,708. AGI = 75,078. Form 8995: QBI 75,078 x 20% = 15,016; 11 = 75,078 - 15,750 = 59,328; 14 = 11,866; 15 = 11,866. 15 = 47,462; 16 = Tax Table row 47,450-47,500 single = 5,459; 24 = 5,459 + 11,415 = 16,874; 26 estimated 15,000; 37 = 1,874. Carryovers out (43, 44) = 0.",
+  "facts": {
+    "taxYear": 2025,
+    "filingStatus": "single",
+    "taxpayer": {
+      "id": "taxpayer",
+      "dateOfBirth": "1990-05-01",
+      "hasValidSsn": true,
+      "canBeClaimedAsDependent": false,
+      "livedInUsOverHalfYear": true,
+      "qualifyingChildOfAnother": false
+    },
+    "dependents": [],
+    "w2s": [],
+    "int1099s": [],
+    "div1099s": [],
+    "nec1099s": [
+      {
+        "id": "nec_1",
+        "owner": "taxpayer",
+        "nonemployeeComp": 9000000
+      }
+    ],
+    "misc1099s": [],
+    "k1099s": [],
+    "e1098s": [],
+    "businesses": [
+      {
+        "owner": "taxpayer",
+        "name": "Example Design",
+        "expenses": {
+          "supplies": 500000
+        },
+        "homeOffice": {
+          "method": "actual",
+          "officeSquareFeet": 300,
+          "homeSquareFeet": 2400,
+          "ownership": "own",
+          "monthsUsed": 12,
+          "indirect": {
+            "mortgage_interest": 1400000,
+            "real_estate_taxes": 600000,
+            "insurance": 150000,
+            "utilities": 300000,
+            "repairs_maintenance": 100000
+          },
+          "home": {
+            "basisOrValue": 40000000,
+            "landValue": 8000000,
+            "businessUseStart": "2022-03-01"
+          }
+        }
+      }
+    ],
+    "rentals": [],
+    "outOfScope": {
+      "retirementDistributions": false,
+      "socialSecurityBenefits": false,
+      "stockOrCryptoSales": false,
+      "k1Income": false,
+      "foreignIncomeOrAccounts": false,
+      "unemploymentCompensation": false,
+      "hsa": false,
+      "educationExpenses": false,
+      "wantsToItemize": false,
+      "marriedFilingSeparately": false,
+      "other": []
+    },
+    "digitalAssetActivity": false,
+    "screening": {
+      "hasRentalOrRoyaltyIncome": false,
+      "paidStudentLoanInterest": false
+    },
+    "eitc": {
+      "priorDisallowance": false
+    },
+    "payments": {
+      "estimatedTaxPayments": 1500000
+    }
+  },
+  "expect": {
+    "schC.tentativeProfit.taxpayer": 85000,
+    "f8829.businessPct.taxpayer": 125000,
+    "f8829.operatingIndirect.taxpayer": 25500,
+    "f8829.operatingIndirectBusiness.taxpayer": 3188,
+    "f8829.operatingAllowed.taxpayer": 3188,
+    "f8829.businessBasis.taxpayer": 40000,
+    "f8829.depreciationPct.taxpayer": 25640,
+    "f8829.depreciationAllowable.taxpayer": 1026,
+    "f8829.allowable.taxpayer": 4214,
+    "f8829.operatingCarryoverOut.taxpayer": 0,
+    "f8829.depreciationCarryoverOut.taxpayer": 0,
+    "schC.homeOffice.taxpayer": 4214,
+    "schC.netProfit.taxpayer": 80786,
+    "seTax.taxpayer": 11415,
+    "seDeduction.taxpayer": 5708,
+    "agi": 75078,
+    "qbiDeduction": 11866,
+    "taxableIncome": 47462,
+    "tax": 5459,
+    "totalTax": 16874,
+    "summary.refundOrOwed": -1874,
+    "complete": true
+  },
+  "forms": [
+    "f1040",
+    "sch1",
+    "sch2",
+    "schC.taxpayer",
+    "schSE.taxpayer",
+    "f8829.taxpayer",
+    "f8995"
+  ]
+}

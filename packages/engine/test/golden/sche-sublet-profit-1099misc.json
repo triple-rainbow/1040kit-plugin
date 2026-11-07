@@ -1,0 +1,102 @@
+{
+  "name": "Single, W-2 plus a sublet apartment with a 1099-MISC (Schedule E profit, no depreciation)",
+  "source": "Worked by hand from i1040se 2025 and Pub. 527. Property A (type 2, multi-family; sublet, so nothing to depreciate): 365 fair rental days, 0 personal; line 3 = 1099-MISC box 1 18,000; line 5 advertising 150; 9 insurance 300; 17 utilities 1,200; 19 other (rent paid to the landlord) 12,000; 20 = 13,650; 21 = 4,350; 23a 18,000; 23e 13,650; 24 = 4,350; 26 = 4,350 -> Schedule 1 line 5. 1040: 9 = 60,000 + 4,350 = 64,350 = 11; 12e 15,750; 15 = 48,600; 16 = Tax Table row 48,600-48,650 single = 5,612; 25a 7,000; 34 = 1,388. EIC: AGI over the limit. NIIT: MAGI under 200,000.",
+  "facts": {
+    "taxYear": 2025,
+    "filingStatus": "single",
+    "taxpayer": {
+      "id": "taxpayer",
+      "dateOfBirth": "1990-05-01",
+      "hasValidSsn": true,
+      "canBeClaimedAsDependent": false,
+      "livedInUsOverHalfYear": true,
+      "qualifyingChildOfAnother": false
+    },
+    "dependents": [],
+    "w2s": [
+      {
+        "id": "w2_1",
+        "owner": "taxpayer",
+        "wages": 6000000,
+        "federalWithheld": 700000,
+        "ssWages": 6000000,
+        "ssTax": 372000,
+        "medicareWages": 6000000,
+        "medicareTax": 87000
+      }
+    ],
+    "int1099s": [],
+    "div1099s": [],
+    "nec1099s": [],
+    "misc1099s": [
+      {
+        "id": "misc_1",
+        "owner": "taxpayer",
+        "rents": 1800000,
+        "treatAsBusiness": false
+      }
+    ],
+    "k1099s": [],
+    "e1098s": [],
+    "businesses": [],
+    "rentals": [
+      {
+        "id": "rental_1",
+        "owner": "taxpayer",
+        "propertyType": 2,
+        "fairRentalDays": 365,
+        "personalUseDays": 0,
+        "misc1099Ids": ["misc_1"],
+        "ownsDepreciableProperty": false,
+        "priorYearUnallowedLoss": false,
+        "expenses": {
+          "advertising": 15000,
+          "insurance": 30000,
+          "utilities": 120000,
+          "other": 1200000
+        }
+      }
+    ],
+    "outOfScope": {
+      "retirementDistributions": false,
+      "socialSecurityBenefits": false,
+      "stockOrCryptoSales": false,
+      "k1Income": false,
+      "foreignIncomeOrAccounts": false,
+      "unemploymentCompensation": false,
+      "hsa": false,
+      "educationExpenses": false,
+      "wantsToItemize": false,
+      "marriedFilingSeparately": false,
+      "other": []
+    },
+    "digitalAssetActivity": false,
+    "screening": {
+      "hasRentalOrRoyaltyIncome": true,
+      "paidStudentLoanInterest": false
+    },
+    "eitc": {
+      "priorDisallowance": false
+    }
+  },
+  "expect": {
+    "schE.rents.rental_1": 18000,
+    "schE.totalExpenses.rental_1": 13650,
+    "schE.net.rental_1": 4350,
+    "schE.totalRents": 18000,
+    "schE.totalExpenses": 13650,
+    "schE.income": 4350,
+    "schE.losses": 0,
+    "schE.total": 4350,
+    "rentalRoyaltyIncome": 4350,
+    "totalIncome": 64350,
+    "agi": 64350,
+    "taxableIncome": 48600,
+    "tax": 5612,
+    "niit": 0,
+    "eic": 0,
+    "summary.refundOrOwed": 1388,
+    "complete": true
+  },
+  "forms": ["f1040", "sch1", "schE"]
+}

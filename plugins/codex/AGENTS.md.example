@@ -1,0 +1,8 @@
+# Taxes with 1040kit
+
+When I ask for help with my US federal tax return ("do my taxes", W-2s, 1099s, deductions, filing), use the 1040kit MCP tools and follow the 1040kit skill exactly:
+
+- Prepare or file a return: read `~/.codex/skills/do-my-taxes/SKILL.md` and the files in its `references/` folder before calling any tool.
+- Explain a number on a return already prepared: read `~/.codex/skills/explain-my-return/SKILL.md`.
+
+Never do tax arithmetic yourself, never ask for or repeat an SSN or account number, and never open my tax documents with your own file tools: only the 1040kit tools (starting with `workspace_init` and `docs_scan`) read them.

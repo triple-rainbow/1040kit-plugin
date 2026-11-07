@@ -1,0 +1,52 @@
+{
+  "name": "Head of household, one W-2, one child (through line 16 and 25d)",
+  "source": "Worked by hand from the 2025 Form 1040 and i1040gi. 1a 48,000; 12e 23,625 (HoH); 15 = 24,375; 16 from the 2025 Tax Table row 24,350-24,400 Head of household = 2,585; 25a 3,100. The child tax credit is checked in ctc-*.json.",
+  "facts": {
+    "taxYear": 2025,
+    "filingStatus": "hoh",
+    "taxpayer": {
+      "id": "taxpayer",
+      "dateOfBirth": "1988-07-15",
+      "hasValidSsn": true,
+      "canBeClaimedAsDependent": false
+    },
+    "dependents": [
+      {
+        "id": "dependent_1",
+        "dateOfBirth": "2016-03-10",
+        "relationship": "child",
+        "monthsLivedWithTaxpayer": 12,
+        "hasValidSsn": true,
+        "providedOverHalfOwnSupport": false
+      }
+    ],
+    "w2s": [
+      {
+        "id": "w2_1",
+        "owner": "taxpayer",
+        "wages": 4800000,
+        "federalWithheld": 310000,
+        "ssWages": 4800000,
+        "ssTax": 297600,
+        "medicareWages": 4800000,
+        "medicareTax": 69600
+      }
+    ],
+    "int1099s": [],
+    "div1099s": [],
+    "nec1099s": [],
+    "misc1099s": [],
+    "k1099s": [],
+    "businesses": [],
+    "e1098s": [],
+    "rentals": []
+  },
+  "expect": {
+    "wages": 48000,
+    "agi": 48000,
+    "standardDeduction": 23625,
+    "taxableIncome": 24375,
+    "tax": 2585,
+    "totalWithholding": 3100
+  }
+}

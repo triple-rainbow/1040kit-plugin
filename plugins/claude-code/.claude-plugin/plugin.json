@@ -1,0 +1,12 @@
+{
+  "name": "1040kit",
+  "version": "0.1.0",
+  "description": "Free AI tax software: prepare your US federal return (W-2 and 1099 income) with your AI assistant. Your documents and your return never leave your computer.",
+  "author": {
+    "name": "Triple Rainbow",
+    "url": "https://1040kit.com"
+  },
+  "homepage": "https://1040kit.com",
+  "repository": "https://github.com/triple-rainbow/1040kit-plugin",
+  "keywords": ["taxes", "1040", "irs", "w-2", "1099", "tax-return"]
+}

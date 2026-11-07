@@ -1,0 +1,74 @@
+{
+  "name": "Single W-2 employee with a side gig (1099-NEC + 1099-K with a personal portion)",
+  "source": "Worked by hand from the 2025 Schedule C, SE, Schedule 1, Form 8995 and Form 1040 instructions. Sch C line 1: NEC 12,000 + 1099-K 3,000 - personal 1,000 = 14,000 (the 1,000 goes in the entry space at the top of Schedule 1, i1040gi 'Form(s) 1099-K'); 22 supplies 500; 31 = 13,500. Sch SE: 4a 13,500 x 0.9235 = 12,467.25 -> 12,467; 8a 70,000; 9 = 106,100; 10 = 12,467 x 12.4% = 1,545.91 -> 1,546; 11 = 361.54 -> 362; 12 = 1,908; 13 = 954. 1040: 1a 70,000; 9 = 83,500; 11a = 82,546; 12e 15,750. 8995: QBI 13,500 - 954 = 12,546 x 20% = 2,509.20 -> 2,509; 11 = 66,796; 14 = 13,359; 15 = 2,509. Line 15 = 64,287; 16 Tax Table row 64,250-64,300 single = 9,055; 24 = 10,963; 25a 8,000; 37 = 2,963.",
+  "facts": {
+    "taxYear": 2025,
+    "filingStatus": "single",
+    "taxpayer": {
+      "id": "taxpayer",
+      "dateOfBirth": "1987-06-21",
+      "hasValidSsn": true,
+      "canBeClaimedAsDependent": false
+    },
+    "dependents": [],
+    "w2s": [
+      {
+        "id": "w2_1",
+        "owner": "taxpayer",
+        "wages": 7000000,
+        "federalWithheld": 800000,
+        "ssWages": 7000000,
+        "ssTax": 434000,
+        "medicareWages": 7000000,
+        "medicareTax": 101500
+      }
+    ],
+    "int1099s": [],
+    "div1099s": [],
+    "nec1099s": [
+      {
+        "id": "nec_1",
+        "owner": "taxpayer",
+        "nonemployeeComp": 1200000
+      }
+    ],
+    "misc1099s": [],
+    "k1099s": [
+      {
+        "id": "k_1",
+        "owner": "taxpayer",
+        "grossAmount": 300000,
+        "personalPortion": 100000
+      }
+    ],
+    "businesses": [
+      {
+        "owner": "taxpayer",
+        "name": "Weekend deliveries",
+        "expenses": {
+          "supplies": 50000
+        }
+      }
+    ],
+    "e1098s": [],
+    "rentals": []
+  },
+  "expect": {
+    "schC.grossReceipts.taxpayer": 14000,
+    "schC.netProfit.taxpayer": 13500,
+    "form1099KPersonalPortion": 1000,
+    "se.netEarnings.taxpayer": 12467,
+    "se.ssPortion.taxpayer": 1546,
+    "se.medicarePortion.taxpayer": 362,
+    "seTax.taxpayer": 1908,
+    "seDeduction": 954,
+    "totalIncome": 83500,
+    "agi": 82546,
+    "qbiDeduction": 2509,
+    "taxableIncome": 64287,
+    "tax": 9055,
+    "totalTax": 10963,
+    "summary.refundOrOwed": -2963
+  },
+  "forms": ["f1040", "sch1", "sch2", "schC.taxpayer", "schSE.taxpayer", "f8995"]
+}

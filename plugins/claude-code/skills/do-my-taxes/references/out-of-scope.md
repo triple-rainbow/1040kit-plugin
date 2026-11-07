@@ -1,0 +1,68 @@
+# What 1040kit handles, and what it doesn't
+
+## Handled in this version
+
+Federal Form 1040 only, for filing statuses Single, Married Filing Jointly and Head of Household, with the standard deduction. Income from W-2s (any number), 1099-INT, 1099-DIV, 1099-NEC, 1099-MISC (boxes 1–3) and 1099-K. One self-employment business (Schedule C) per person, with the simplified or actual-expense home office (Form 8829, including depreciation for homeowners). Rents and royalties on Schedule E for up to 3 properties, when no depreciation is involved (for example, a rented room or apartment the user doesn't own, or royalties). Deductions and credits: the new 2025 deductions for tips, overtime, car loan interest and seniors (Schedule 1-A), student loan interest (1098-E), Child Tax Credit and Credit for Other Dependents, the Earned Income Credit (Schedule EIC), the qualified business income deduction (Form 8995), half of self-employment tax, self-employed health insurance and SEP-IRA contributions. Taxes: Additional Medicare Tax (Form 8959) and Net Investment Income Tax (Form 8960).
+
+## Screening questions (playbook step 4)
+
+Ask these in one friendly message, in plain words, after `docs_scan`. Record each answer with `profile_set` (`source: 'user'`) at the path shown, `true` for yes and `false` for no. The two `screening.*` questions are topics 1040kit handles: a yes just means `interview_next` will ask about them.
+
+| Ask about the tax year: did you (or your spouse)…                    | Path                                  |
+| -------------------------------------------------------------------- | ------------------------------------- |
+| take money out of a retirement plan or IRA, or get a 1099-R?         | `outOfScope.retirementDistributions`  |
+| get Social Security benefits (SSA-1099)?                             | `outOfScope.socialSecurityBenefits`   |
+| sell stocks, funds or crypto, or get a 1099-B?                       | `outOfScope.stockOrCryptoSales`       |
+| rent out property, or get royalties?                                 | `screening.hasRentalOrRoyaltyIncome`  |
+| get a Schedule K-1 from a partnership, S corp, estate or trust?      | `outOfScope.k1Income`                 |
+| have income from, or accounts in, another country?                   | `outOfScope.foreignIncomeOrAccounts`  |
+| get unemployment benefits (1099-G)?                                  | `outOfScope.unemploymentCompensation` |
+| have a Health Savings Account (HSA)?                                 | `outOfScope.hsa`                      |
+| pay college tuition (Form 1098-T) and want an education credit?      | `outOfScope.educationExpenses`        |
+| pay student loan interest (Form 1098-E)?                             | `screening.paidStudentLoanInterest`   |
+| want to itemize deductions instead of taking the standard deduction? | `outOfScope.wantsToItemize`           |
+| (married) plan to file separately from your spouse?                  | `outOfScope.marriedFilingSeparately`  |
+
+Also ask whether they owned, received, sold or exchanged any digital assets (crypto) and record `digitalAssetActivity`.
+
+If they mention something else not covered above (for example a 1099-C, gambling winnings, alimony, a household employee), record it in `outOfScope.other` as a short plain description and treat it as unsupported.
+
+## When something is out of scope
+
+Triggers: an `unsupported` item from `calc_return`, an `unsupported_form` document from `docs_scan`, or a yes to an `outOfScope.*` screening question.
+
+Say, in this order and in your own words:
+
+1. **What it is**: name the situation in plain words, using the tool's `message`.
+2. **That 1040kit can't include it yet**, and when it's planned: use the item's `deferredTo` (`v1.1`, `v1.2`, `v2`, or `not_planned`) and the table below. Don't promise dates beyond that.
+3. **Why you're stopping**: a return that leaves it out, or guesses at it, would be wrong. 1040kit won't produce forms for an incomplete return.
+4. **Their options**: other tax software or a tax professional; https://www.irs.gov/freefile lists free options from the IRS. Their 1040kit workspace stays on their computer if they want to come back to it.
+
+Don't suggest leaving it off, entering a guessed amount, or changing an answer. If they say the yes was a mistake, ask them to confirm, then `profile_set` the corrected answer and run `calc_return` again.
+
+## Deferred items and when they're planned
+
+| Situation                                                                                                                                                                            | Planned                                                                                                                                                                                                |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| State returns                                                                                                                                                                        | First big addition after v1: aiming at as many states as possible during the 2027 filing season. v1 is federal only, so tell them to check their state's tax agency for what their state return needs. |
+| Itemized deductions (Schedule A)                                                                                                                                                     | v1.1                                                                                                                                                                                                   |
+| Retirement distributions (1099-R)                                                                                                                                                    | v1.1                                                                                                                                                                                                   |
+| Education credits (Form 8863)                                                                                                                                                        | v1.1                                                                                                                                                                                                   |
+| Social Security benefits (SSA-1099)                                                                                                                                                  | v1.1                                                                                                                                                                                                   |
+| Married filing separately                                                                                                                                                            | v1.1                                                                                                                                                                                                   |
+| Quarterly estimated tax planner (1040-ES)                                                                                                                                            | v1.1                                                                                                                                                                                                   |
+| More than 3 rental or royalty properties (`rental_over_3`)                                                                                                                           | v1.1                                                                                                                                                                                                   |
+| HSA (Form 8889), unemployment (1099-G), child and dependent care credit, Saver's Credit, Schedule 3 credits                                                                          | v1.1 to v1.2                                                                                                                                                                                           |
+| Rental depreciation (`rental_depreciation`), rental losses that need Form 8582 (`passive_loss_8582`), vacation homes (`vacation_home`), renting to your own business (`self_rental`) | v2                                                                                                                                                                                                     |
+| Earned Income Credit after an earlier denial (Form 8862, `eitc_8862`)                                                                                                                | v2                                                                                                                                                                                                     |
+| Stock and crypto sales (1099-B, Form 8949)                                                                                                                                           | v2                                                                                                                                                                                                     |
+| K-1s, foreign income, AMT, more than one business per person, amended returns (1040-X), years before 2025, the full QBI form (8995-A)                                                | v2 or later                                                                                                                                                                                            |
+| Anything else: use the tool's `deferredTo`                                                                                                                                           |                                                                                                                                                                                                        |
+
+## Special cases
+
+- **`hoh_no_qualifying_person`**: this isn't a missing feature. Head of Household needs a qualifying person, and the facts so far don't show one. Explain using the tool's message and citation (or `kb_search`), check the dependent answers with the user, and let them choose: correct a dependent fact, or change filing status with `profile_set`. Don't pick the status for them.
+- **1099-MISC rents or royalties** (`interview_next` asks about `rentals[<id>].misc1099Ids` or `misc1099s[<id>].treatAsBusiness`): ask whether the money is receipts of their own self-employment business (then `treatAsBusiness: true`, Schedule C) or rent/royalties from a property or work they let others use (then create a `rentals[rental_N]` item and list the 1099-MISC id in its `misc1099Ids`). Don't decide for them.
+- **Rentals and depreciation** (`rental_depreciation`): if they own the building or equipment they rent out, the IRS requires depreciation, which 1040kit can't compute yet. Explain that leaving it out would overstate their income and change their basis later, so they need other software or a professional. Never record `ownsDepreciableProperty: false` unless the user says they don't own what they rent out.
+- **`provisional_params`** (2026 returns): the IRS hasn't finalized every 2026 number 1040kit uses, so the return can't be finished yet. They can keep going with documents and the interview; forms become available once an update of 1040kit ships the final numbers.
+- **1099-K payments that were personal** (money from friends, selling personal items at a loss): this is in scope. It's handled in `deductions-conversation.md` (1099-K reconciliation).

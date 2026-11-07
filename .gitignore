@@ -1,0 +1,27 @@
+node_modules/
+.DS_Store
+*.log
+*.tsbuildinfo
+.env
+.env.*
+
+# Private engine test returns (real data never committed)
+packages/engine/test/private/*.json
+
+# Local test sandbox for plugins/dev/1040kit-dev.sh (taxes, keys, test documents)
+/.dev/
+
+# MCP Apps widget test host (pnpm --filter 1040kit widget:harness)
+/packages/mcp/.widget-harness/
+
+# Agent worktrees
+.claude/worktrees/
+
+# Defensive: databases and build output never belong here
+*.db
+*.sqlite
+*.sqlite3
+/data/
+.output/
+.nitro/
+dist/

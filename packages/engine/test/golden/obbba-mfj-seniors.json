@@ -1,0 +1,57 @@
+{
+  "name": "MFJ, both 65+, W-2 plus bank interest (senior deduction for both)",
+  "source": "Worked by hand from the 2025 Form 1040, Schedule 1-A, Schedule B and i1040gi. 1a 60,000; 2b 2,000 (Schedule B: over 1,500); 9 = 11a = 62,000; 12e from the chart for people born before January 2, 1961: MFJ with 2 boxes = 34,700. Schedule 1-A Part V: 31 = 62,000; 32 = 150,000; 33 = 0 -> 35 = 6,000; 36a 6,000; 36b 6,000; 37 = 12,000. 1040: 13b 12,000; 14 = 46,700; 15 = 15,300; 16 Tax Table row 15,300-15,350 MFJ = 1,533; 25a 2,000; 34 = 467.",
+  "facts": {
+    "taxYear": 2025,
+    "filingStatus": "mfj",
+    "taxpayer": {
+      "id": "taxpayer",
+      "dateOfBirth": "1958-04-01",
+      "hasValidSsn": true,
+      "canBeClaimedAsDependent": false
+    },
+    "spouse": {
+      "id": "spouse",
+      "dateOfBirth": "1959-09-15",
+      "hasValidSsn": true,
+      "canBeClaimedAsDependent": false
+    },
+    "dependents": [],
+    "w2s": [
+      {
+        "id": "w2_1",
+        "owner": "spouse",
+        "wages": 6000000,
+        "federalWithheld": 200000,
+        "ssWages": 6000000,
+        "ssTax": 372000,
+        "medicareWages": 6000000,
+        "medicareTax": 87000
+      }
+    ],
+    "int1099s": [
+      {
+        "id": "int_1",
+        "owner": "taxpayer",
+        "interest": 200000
+      }
+    ],
+    "div1099s": [],
+    "nec1099s": [],
+    "misc1099s": [],
+    "k1099s": [],
+    "businesses": [],
+    "e1098s": [],
+    "rentals": []
+  },
+  "expect": {
+    "agi": 62000,
+    "standardDeduction": 34700,
+    "seniorDeductionPerPerson": 6000,
+    "seniorDeduction": 12000,
+    "taxableIncome": 15300,
+    "tax": 1533,
+    "summary.refundOrOwed": 467
+  },
+  "forms": ["f1040", "sch1a", "schB"]
+}

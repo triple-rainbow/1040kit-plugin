@@ -1,0 +1,74 @@
+{
+  "name": "MFJ, two W-2s, dividends with capital gain distributions",
+  "source": "Worked by hand from the 2025 Form 1040 and i1040gi. 1a: 85,000.00 + 62,500.50 = 147,500.50 -> 147,501; 3a 1,500; 3b 2,000 (Schedule B: ordinary dividends > 1,500); 7a 300 (capital gain distributions, Schedule D not required); 9 = 149,801; 12e 31,500; 15 = 118,301. QDCG worksheet: 4) 1,800 5) 116,501 6) 96,700 7) 96,700 8) 96,700 9) 0 10) 1,800 12) 1,800 13) 600,050 14) 118,301 15) 116,501 16) 1,800 17) 1,800 18) 270 22) Tax Computation Worksheet Sec. B: 116,501 x 22% - 10,172 = 15,458.22 23) 15,728.22 24) 118,301 x 22% - 10,172 = 15,854.22 25) 15,728. 25a 15,500; 37 = 228.",
+  "facts": {
+    "taxYear": 2025,
+    "filingStatus": "mfj",
+    "taxpayer": {
+      "id": "taxpayer",
+      "dateOfBirth": "1982-02-02",
+      "hasValidSsn": true,
+      "canBeClaimedAsDependent": false
+    },
+    "spouse": {
+      "id": "spouse",
+      "dateOfBirth": "1984-09-30",
+      "hasValidSsn": true,
+      "canBeClaimedAsDependent": false
+    },
+    "dependents": [],
+    "w2s": [
+      {
+        "id": "w2_1",
+        "owner": "taxpayer",
+        "wages": 8500000,
+        "federalWithheld": 900000,
+        "ssWages": 8500000,
+        "ssTax": 527000,
+        "medicareWages": 8500000,
+        "medicareTax": 123250
+      },
+      {
+        "id": "w2_2",
+        "owner": "spouse",
+        "wages": 6250050,
+        "federalWithheld": 650000,
+        "ssWages": 6250050,
+        "ssTax": 387503,
+        "medicareWages": 6250050,
+        "medicareTax": 90626
+      }
+    ],
+    "int1099s": [],
+    "div1099s": [
+      {
+        "id": "div_1",
+        "owner": "taxpayer",
+        "ordinaryDividends": 200000,
+        "qualifiedDividends": 150000,
+        "capitalGainDistributions": 30000
+      }
+    ],
+    "nec1099s": [],
+    "misc1099s": [],
+    "k1099s": [],
+    "businesses": [],
+    "e1098s": [],
+    "rentals": []
+  },
+  "expect": {
+    "wages": 147501,
+    "qualifiedDividends": 1500,
+    "ordinaryDividends": 2000,
+    "capitalGainDistributions": 300,
+    "totalIncome": 149801,
+    "agi": 149801,
+    "standardDeduction": 31500,
+    "taxableIncome": 118301,
+    "tax": 15728,
+    "totalWithholding": 15500,
+    "amountOwed": 228,
+    "summary.refundOrOwed": -228
+  },
+  "forms": ["f1040", "schB"]
+}

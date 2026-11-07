@@ -1,0 +1,24 @@
+# 1040kit — Agent Instructions
+
+Public repo: the tax engine, the MCP server (npm `1040kit`) and the assistant plugins. The website and the IRS knowledge-base pipeline live in a separate private repo.
+
+## Layout
+
+- `packages/engine` (`@1040kit/engine`, private, inlined into the npm bundle): pure, deterministic, zero dependencies. Per-year parameters in `src/params/`, forms in `src/forms/`, rules in `src/rules/`. Every value is a traced node with an IRS citation; form line numbers come from `formLines` / `lineAliases`.
+- `packages/mcp` (`1040kit`): stdio MCP server. Tools in `src/tools/`, storage behind `openStore`, PDF filling in `src/output/`, MCP Apps widgets in `src/ui/`.
+- `plugins/claude-code`, `plugins/codex`: skills (Codex skills are symlinks to the Claude Code ones). `plugins/scripts/check-skills.ts` checks that skills only name real tools, in playbook order.
+- `plugins/dev/1040kit-dev.sh`: runs the server from source with a sandbox in `.dev/`.
+
+## Commands
+
+- `pnpm test` — engine, MCP and skill-linter tests
+- `pnpm typecheck`
+- `pnpm --filter 1040kit widget:harness` — build the widget test host
+
+## Rules
+
+- Never do tax arithmetic outside the engine. Change a number by changing a parameter or a node, with its citation, and a test.
+- Tests use synthetic people only (no real names, SSNs, EINs or addresses). `packages/engine/test/private/` is for the owner's real returns and is gitignored.
+- 1040kit never stores SSNs, ITINs or bank account numbers.
+- The widget page loads nothing from the network and writes text with `textContent`, never `innerHTML`.
+- License: AGPL-3.0-only. Don't copy in code under an incompatible license.

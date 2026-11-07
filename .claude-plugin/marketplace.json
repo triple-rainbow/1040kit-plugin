@@ -1,0 +1,18 @@
+{
+  "name": "1040kit",
+  "owner": {
+    "name": "Triple Rainbow",
+    "url": "https://1040kit.com"
+  },
+  "metadata": {
+    "description": "1040kit: free AI tax software for Claude Code."
+  },
+  "plugins": [
+    {
+      "name": "1040kit",
+      "source": "./plugins/claude-code",
+      "description": "Prepare your US federal tax return (W-2 and 1099 income) with your AI assistant, then print and mail it or enter it in IRS Free File Fillable Forms.",
+      "homepage": "https://1040kit.com"
+    }
+  ]
+}

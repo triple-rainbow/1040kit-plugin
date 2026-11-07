@@ -1,0 +1,51 @@
+{
+  "name": "Single server with W-2 tips (no tax on tips, Schedule 1-A)",
+  "source": "Worked by hand from the 2025 Form 1040, Schedule 1-A and i1040gi. 1a 42,000 (includes box 7 tips 9,000); 11a 42,000; 12e 15,750. Schedule 1-A: 3 = 42,000; 4a/6 = 9,000; 7 = 9,000; 10 = 0 (MAGI under 150,000); 13 = 9,000; 38 = 9,000. 1040: 13b 9,000; 14 = 24,750; 15 = 17,250; 16 Tax Table row 17,250-17,300 single = 1,835; 25a 3,000; 34 = 1,165.",
+  "facts": {
+    "taxYear": 2025,
+    "filingStatus": "single",
+    "taxpayer": {
+      "id": "taxpayer",
+      "dateOfBirth": "1996-02-29",
+      "hasValidSsn": true,
+      "canBeClaimedAsDependent": false
+    },
+    "dependents": [],
+    "w2s": [
+      {
+        "id": "w2_1",
+        "owner": "taxpayer",
+        "wages": 4200000,
+        "federalWithheld": 300000,
+        "ssWages": 3300000,
+        "ssTips": 900000,
+        "ssTax": 260400,
+        "medicareWages": 4200000,
+        "medicareTax": 60900
+      }
+    ],
+    "int1099s": [],
+    "div1099s": [],
+    "nec1099s": [],
+    "misc1099s": [],
+    "k1099s": [],
+    "businesses": [],
+    "obbba": {
+      "qualifiedTips": {
+        "taxpayer": 900000
+      }
+    },
+    "e1098s": [],
+    "rentals": []
+  },
+  "expect": {
+    "agi": 42000,
+    "tipsDeduction": 9000,
+    "sch1aTotal": 9000,
+    "deductions": 24750,
+    "taxableIncome": 17250,
+    "tax": 1835,
+    "summary.refundOrOwed": 1165
+  },
+  "forms": ["f1040", "sch1a"]
+}

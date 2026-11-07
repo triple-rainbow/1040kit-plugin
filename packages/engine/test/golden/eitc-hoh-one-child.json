@@ -1,0 +1,82 @@
+{
+  "name": "Head of household, one child, W-2 22,000: EIC plateau, ACTC",
+  "source": "Worked by hand from the 2025 Form 1040, i1040gi line 27a (Steps 1-6, Worksheet A), the 2025 EIC Table and Schedule 8812. 1a 22,000 = 11 (AGI); 12e 23,625; 15 = 0; 16 = 0. EIC: Step 2 investment income 0; one qualifying child (age 7, SSN, 12 months); Worksheet A line 1 = 22,000, line 2 = EIC Table row 22,000-22,050, HoH 1 child = 4,328; line 3 = line 1 -> line 6 = 4,328. Sch 8812: 5 = 2,200; 13 = 0 so 14 = 0; 16a = 2,200; 16b = 1,700; 17 = 1,700; 19 = 22,000 - 2,500 = 19,500; 20 = 2,925; 27 = 1,700. 25a 800; 27a 4,328; 28 1,700; 32 = 6,028; 33 = 6,828; 34 = 6,828.",
+  "facts": {
+    "taxYear": 2025,
+    "filingStatus": "hoh",
+    "taxpayer": {
+      "id": "taxpayer",
+      "dateOfBirth": "1990-05-01",
+      "hasValidSsn": true,
+      "canBeClaimedAsDependent": false,
+      "livedInUsOverHalfYear": true,
+      "qualifyingChildOfAnother": false
+    },
+    "dependents": [
+      {
+        "id": "dependent_1",
+        "dateOfBirth": "2018-03-10",
+        "relationship": "child",
+        "monthsLivedWithTaxpayer": 12,
+        "hasValidSsn": true,
+        "providedOverHalfOwnSupport": false
+      }
+    ],
+    "w2s": [
+      {
+        "id": "w2_1",
+        "owner": "taxpayer",
+        "wages": 2200000,
+        "federalWithheld": 80000,
+        "ssWages": 2200000,
+        "ssTax": 136400,
+        "medicareWages": 2200000,
+        "medicareTax": 31900
+      }
+    ],
+    "int1099s": [],
+    "div1099s": [],
+    "nec1099s": [],
+    "misc1099s": [],
+    "k1099s": [],
+    "e1098s": [],
+    "businesses": [],
+    "rentals": [],
+    "outOfScope": {
+      "retirementDistributions": false,
+      "socialSecurityBenefits": false,
+      "stockOrCryptoSales": false,
+      "k1Income": false,
+      "foreignIncomeOrAccounts": false,
+      "unemploymentCompensation": false,
+      "hsa": false,
+      "educationExpenses": false,
+      "wantsToItemize": false,
+      "marriedFilingSeparately": false,
+      "other": []
+    },
+    "digitalAssetActivity": false,
+    "screening": {
+      "hasRentalOrRoyaltyIncome": false,
+      "paidStudentLoanInterest": false
+    },
+    "eitc": {
+      "priorDisallowance": false
+    }
+  },
+  "expect": {
+    "agi": 22000,
+    "taxableIncome": 0,
+    "tax": 0,
+    "eic": 4328,
+    "eic.qualifyingChildren": 1,
+    "actc": 1700,
+    "otherPaymentsAndCredits": 6028,
+    "totalPayments": 6828,
+    "summary.refundOrOwed": 6828,
+    "schEIC.yearOfBirth.dependent_1": 2018,
+    "schEIC.monthsLived.dependent_1": 12,
+    "complete": true
+  },
+  "forms": ["f1040", "sch8812", "schEIC"]
+}

@@ -1,0 +1,109 @@
+{
+  "name": "MFJ, high income: Additional Medicare Tax (Form 8959) and NIIT (Form 8960)",
+  "source": "Worked by hand from Forms 8959 and 8960 (2025) and their instructions, and the i1040gi QDCG worksheet. W-2s: 260,000 (box 6 = 3,770 + 0.9% x 60,000 = 4,310) and 90,000 (box 6 1,305). 8959: 1 = 350,000; 5 = 250,000; 6 = 100,000; 7 = 900; 18 = 900; 19 = 5,615; 20 = 350,000; 21 = 5,075; 22 = 540; 24 = 540 -> 1040 25c. 1040: 9 = 350,000 + 15,000 interest + 25,000 dividends + 5,000 cap gain distributions = 395,000 = 11; 12e 31,500; 15 = 363,500. QDCG: preferential 20,000 + 5,000 = 25,000 at 15% = 3,750; ordinary 338,500 by the Tax Computation Worksheet = 66,934; 16 = 70,684 (regular tax 72,934 is higher). 8960: 1 = 15,000; 2 = 25,000; 5a = 5,000; 8 = 45,000; 12 = 45,000; 13 = 395,000; 14 = 250,000; 15 = 145,000; 16 = 45,000; 17 = 1,710. Schedule 2: 11 = 900; 12 = 1,710; 21 = 2,610. 24 = 73,294; 25 = 70,000 + 12,000 + 540 = 82,540; 34 = 9,246.",
+  "facts": {
+    "taxYear": 2025,
+    "filingStatus": "mfj",
+    "taxpayer": {
+      "id": "taxpayer",
+      "dateOfBirth": "1980-02-02",
+      "hasValidSsn": true,
+      "canBeClaimedAsDependent": false
+    },
+    "dependents": [],
+    "w2s": [
+      {
+        "id": "w2_1",
+        "owner": "taxpayer",
+        "wages": 26000000,
+        "federalWithheld": 7000000,
+        "ssWages": 17610000,
+        "ssTax": 1091820,
+        "medicareWages": 26000000,
+        "medicareTax": 431000
+      },
+      {
+        "id": "w2_2",
+        "owner": "spouse",
+        "wages": 9000000,
+        "federalWithheld": 1200000,
+        "ssWages": 9000000,
+        "ssTax": 558000,
+        "medicareWages": 9000000,
+        "medicareTax": 130500
+      }
+    ],
+    "int1099s": [
+      {
+        "id": "int_1",
+        "owner": "taxpayer",
+        "interest": 1500000
+      }
+    ],
+    "div1099s": [
+      {
+        "id": "div_1",
+        "owner": "spouse",
+        "ordinaryDividends": 2500000,
+        "qualifiedDividends": 2000000,
+        "capitalGainDistributions": 500000
+      }
+    ],
+    "nec1099s": [],
+    "misc1099s": [],
+    "k1099s": [],
+    "e1098s": [],
+    "businesses": [],
+    "rentals": [],
+    "outOfScope": {
+      "retirementDistributions": false,
+      "socialSecurityBenefits": false,
+      "stockOrCryptoSales": false,
+      "k1Income": false,
+      "foreignIncomeOrAccounts": false,
+      "unemploymentCompensation": false,
+      "hsa": false,
+      "educationExpenses": false,
+      "wantsToItemize": false,
+      "marriedFilingSeparately": false,
+      "other": []
+    },
+    "digitalAssetActivity": false,
+    "screening": {
+      "hasRentalOrRoyaltyIncome": false,
+      "paidStudentLoanInterest": false
+    },
+    "eitc": {
+      "priorDisallowance": false
+    },
+    "spouse": {
+      "id": "spouse",
+      "dateOfBirth": "1982-09-09",
+      "hasValidSsn": true,
+      "canBeClaimedAsDependent": false
+    }
+  },
+  "expect": {
+    "f8959.medicareWages": 350000,
+    "f8959.taxOnWages": 900,
+    "f8959.total": 900,
+    "f8959.medicareWithheld": 5615,
+    "f8959.regularWithholding": 5075,
+    "f8959.additionalWithheld": 540,
+    "withholdingOther": 540,
+    "agi": 395000,
+    "taxableIncome": 363500,
+    "tax": 70684,
+    "f8960.investmentIncome": 45000,
+    "f8960.magiOverThreshold": 145000,
+    "niit": 1710,
+    "sch2.additionalMedicareTax": 900,
+    "sch2.niit": 1710,
+    "otherTaxes": 2610,
+    "totalTax": 73294,
+    "totalPayments": 82540,
+    "summary.refundOrOwed": 9246,
+    "complete": true
+  },
+  "forms": ["f1040", "sch2", "schB", "f8959", "f8960"]
+}

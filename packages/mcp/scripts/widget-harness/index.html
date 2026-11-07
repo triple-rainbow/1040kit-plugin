@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>MCP Apps test host</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        margin: 16px;
+        background: #f4f3ee;
+        color: #1a1a19;
+      }
+      .chat {
+        max-width: 680px;
+      }
+      .bubble {
+        background: #fff;
+        border: 1px solid #ddd;
+        border-radius: 12px;
+        padding: 10px;
+        margin: 8px 0;
+      }
+      iframe {
+        width: 100%;
+        border: 0;
+        height: 300px;
+        background: transparent;
+      }
+      pre {
+        white-space: pre-wrap;
+        font-size: 12px;
+        background: #fff;
+        border: 1px solid #ddd;
+        padding: 8px;
+        border-radius: 8px;
+      }
+      h2 {
+        font-size: 13px;
+        margin: 14px 0 4px;
+        color: #666;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="chat">
+      <div class="bubble">
+        Assistant: Let me ask a few questions. (called
+        <code>interview_next</code>)
+      </div>
+      <iframe
+        id="w"
+        sandbox="allow-scripts allow-forms"
+        title="1040kit widget"
+      ></iframe>
+      <h2>Messages the widget sent to the chat (ui/message)</h2>
+      <pre id="msgs">(none)</pre>
+      <h2>Tool calls the widget made (tools/call)</h2>
+      <pre id="calls">(none)</pre>
+    </div>
+    <script type="module">
+      // Listen before anything async: the widget sends ui/initialize as soon as it loads.
+      const resultP = fetch('result.json').then((r) => r.json());
+      const frame = document.getElementById('w');
+      // Hosts load widgets as inline HTML in a sandboxed frame (opaque origin), like this.
+      const log = { msgs: [], calls: [], wire: [] };
+      window.__host = log;
+      // Dev only: forward the widget's console and errors to window.__host.console.
+      const HOOK =
+        '<script>for (const k of ["log","warn","error","info","debug"]) { const o = console[k]; console[k] = (...a) => { try { parent.postMessage({ harnessConsole: k + ": " + a.map((x) => { try { return typeof x === "string" ? x : JSON.stringify(x).slice(0, 300); } catch { return String(x); } }).join(" ") }, "*"); } catch {} o.apply(console, a); }; } addEventListener("error", (e) => parent.postMessage({ harnessConsole: "ERROR " + e.message + " line " + e.lineno }, "*")); addEventListener("unhandledrejection", (e) => parent.postMessage({ harnessConsole: "REJECTED " + String(e.reason && e.reason.message || e.reason) }, "*"));<\/script>';
+      log.console = [];
+      window.addEventListener('message', (ev) => {
+        if (ev.data && ev.data.harnessConsole)
+          log.console.push(ev.data.harnessConsole);
+      });
+      fetch('widget.html')
+        .then((r) => r.text())
+        .then((html) => {
+          frame.srcdoc = html.replace('<head>', '<head>' + HOOK);
+        });
+      const send = (msg) => frame.contentWindow.postMessage(msg, '*');
+      const show = (id, arr) =>
+        (document.getElementById(id).textContent = arr.length
+          ? arr.map((x) => JSON.stringify(x, null, 1)).join('\n\n')
+          : '(none)');
+
+      window.addEventListener('message', async (ev) => {
+        if (ev.source !== frame.contentWindow) return;
+        const m = ev.data;
+        if (!m || m.jsonrpc !== '2.0') return;
+        log.wire.push(m.method || 'response:' + m.id);
+        if (m.method === 'ui/initialize') {
+          send({
+            jsonrpc: '2.0',
+            id: m.id,
+            result: {
+              protocolVersion: m.params.protocolVersion,
+              hostCapabilities: {
+                message: { text: {} },
+                serverTools: {},
+                updateModelContext: { text: {} },
+              },
+              hostInfo: { name: 'test-host', version: '0.0.1' },
+              hostContext: {
+                theme: 'light',
+                displayMode: 'inline',
+                platform: 'desktop',
+              },
+            },
+          });
+        } else if (m.method === 'ui/notifications/initialized') {
+          const result = await resultP;
+          send({
+            jsonrpc: '2.0',
+            method: 'ui/notifications/tool-input',
+            params: {
+              arguments: { workspace: result.structuredContent.workspace },
+            },
+          });
+          send({
+            jsonrpc: '2.0',
+            method: 'ui/notifications/tool-result',
+            params: result,
+          });
+        } else if (m.method === 'tools/call') {
+          log.calls.push(m.params);
+          show('calls', log.calls);
+          const set = m.params.arguments.set || [];
+          const rejected = set
+            .filter(
+              (s) => s.path.endsWith('monthsLivedWithTaxpayer') && s.value === 0
+            )
+            .map((s) => ({
+              path: s.path,
+              reason: 'test host: rejected on purpose',
+            }));
+          const env = {
+            ok: true,
+            updated: set
+              .filter((s) => !rejected.some((r) => r.path === s.path))
+              .map((s) => s.path),
+            rejected,
+          };
+          send({
+            jsonrpc: '2.0',
+            id: m.id,
+            result: {
+              content: [{ type: 'text', text: JSON.stringify(env) }],
+              structuredContent: env,
+            },
+          });
+        } else if (m.method === 'ui/message') {
+          log.msgs.push(m.params);
+          show('msgs', log.msgs);
+          send({ jsonrpc: '2.0', id: m.id, result: {} });
+        } else if (m.method === 'ui/notifications/size-changed') {
+          if (m.params.height)
+            frame.style.height = Math.ceil(m.params.height) + 'px';
+        } else if (m.id !== undefined) {
+          send({ jsonrpc: '2.0', id: m.id, result: {} });
+        }
+      });
+    </script>
+  </body>
+</html>
