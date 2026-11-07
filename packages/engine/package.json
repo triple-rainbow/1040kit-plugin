@@ -6,7 +6,7 @@
   "description": "Deterministic federal tax engine for 1040kit",
   "license": "AGPL-3.0-only",
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "exports": {
     ".": "./src/index.ts"

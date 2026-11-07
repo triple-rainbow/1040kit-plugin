@@ -6,7 +6,7 @@
 
 ## What you need
 
-- **Node.js 20 or later.** Check with `node --version`. Get it from https://nodejs.org if needed.
+- **Node.js 22 or later.** Check with `node --version`. Get it from https://nodejs.org if needed.
 - **Claude Code** or **Codex**, installed and signed in.
 
 The first time your assistant starts 1040kit, `npx` downloads the `1040kit` package from npm. After that, 1040kit works offline, except when the assistant looks up an IRS rule (see "What goes over the network" below).

@@ -7,7 +7,7 @@
   "license": "AGPL-3.0-only",
   "repository": "https://github.com/triple-rainbow/1040kit-plugin",
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "scripts": {
     "test": "pnpm test:engine && pnpm test:mcp && pnpm test:plugins",
