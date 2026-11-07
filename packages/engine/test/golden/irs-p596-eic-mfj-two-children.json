@@ -1,0 +1,82 @@
+{
+  "name": "Pub 596 Example 2: MFJ, two W-2s, $525 interest, two children (EIC from the table on AGI)",
+  "source": "Publication 596 (2025), Chapter 6 Detailed Examples, Example 2 (Cameron and Jordan Grey), pp. 22-23: wages 15,000 + 18,030, interest 525, two qualifying children ages 10 and 8. AGI 33,555; earned income 33,030; EIC Worksheet line 2 = 6,614 (table, 33,000-33,050, MFJ two children); line 5 = 6,498 (table on AGI 33,555); EIC 6,498.",
+  "facts": {
+    "taxYear": 2025,
+    "filingStatus": "mfj",
+    "taxpayer": {
+      "id": "taxpayer",
+      "dateOfBirth": "1988-04-01",
+      "hasValidSsn": true,
+      "canBeClaimedAsDependent": false
+    },
+    "dependents": [
+      {
+        "id": "dependent_1",
+        "dateOfBirth": "2015-06-01",
+        "relationship": "child",
+        "monthsLivedWithTaxpayer": 12,
+        "hasValidSsn": true,
+        "providedOverHalfOwnSupport": false
+      },
+      {
+        "id": "dependent_2",
+        "dateOfBirth": "2017-06-01",
+        "relationship": "child",
+        "monthsLivedWithTaxpayer": 12,
+        "hasValidSsn": true,
+        "providedOverHalfOwnSupport": false
+      }
+    ],
+    "w2s": [
+      {
+        "id": "w2_1",
+        "owner": "taxpayer",
+        "wages": 1500000,
+        "federalWithheld": 0,
+        "ssWages": 1500000,
+        "ssTax": 93000,
+        "medicareWages": 1500000,
+        "medicareTax": 21750
+      },
+      {
+        "id": "w2_2",
+        "owner": "spouse",
+        "wages": 1803000,
+        "federalWithheld": 0,
+        "ssWages": 1803000,
+        "ssTax": 111786,
+        "medicareWages": 1803000,
+        "medicareTax": 26144
+      }
+    ],
+    "int1099s": [
+      {
+        "id": "int_1",
+        "owner": "taxpayer",
+        "interest": 52500
+      }
+    ],
+    "div1099s": [],
+    "nec1099s": [],
+    "misc1099s": [],
+    "k1099s": [],
+    "businesses": [],
+    "e1098s": [],
+    "rentals": [],
+    "spouse": {
+      "id": "spouse",
+      "dateOfBirth": "1989-09-01",
+      "hasValidSsn": true,
+      "canBeClaimedAsDependent": false
+    }
+  },
+  "expect": {
+    "agi": 33555,
+    "earnedIncome": 33030,
+    "eic.qualifyingChildren": 2,
+    "eic.creditOnEarnedIncome": 6614,
+    "eic.creditOnAgi": 6498,
+    "eic": 6498
+  }
+}

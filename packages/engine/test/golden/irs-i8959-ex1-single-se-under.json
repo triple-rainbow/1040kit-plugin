@@ -1,0 +1,42 @@
+{
+  "name": "Form 8959 instructions Example 1 (Ann): single, $130,000 SE income, no wages",
+  "source": "Instructions for Form 8959 (2025), Examples, Example 1, p. 2: SE income below the 200,000 single threshold; no Additional Medicare Tax. SE income built as a Schedule C profit of 140,769 (x 92.35% = 130,000 on Schedule SE line 6).",
+  "facts": {
+    "taxYear": 2025,
+    "filingStatus": "single",
+    "taxpayer": {
+      "id": "taxpayer",
+      "dateOfBirth": "1978-01-01",
+      "hasValidSsn": true,
+      "canBeClaimedAsDependent": false
+    },
+    "dependents": [],
+    "w2s": [],
+    "int1099s": [],
+    "div1099s": [],
+    "nec1099s": [
+      {
+        "id": "nec_1",
+        "owner": "taxpayer",
+        "payerToken": "{{PAYER:nec_1}}",
+        "nonemployeeComp": 14076900
+      }
+    ],
+    "misc1099s": [],
+    "k1099s": [],
+    "businesses": [
+      {
+        "owner": "taxpayer",
+        "name": "Example Consulting",
+        "expenses": {}
+      }
+    ],
+    "e1098s": [],
+    "rentals": []
+  },
+  "expect": {
+    "f8959.total": 0,
+    "sch2.additionalMedicareTax": 0,
+    "f8959.seIncome": 130000
+  }
+}

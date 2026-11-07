@@ -1,0 +1,55 @@
+{
+  "name": "Form 8959 instructions Example 5 (Erin and Frank): MFJ, wages $150,000 + $175,000",
+  "source": "Instructions for Form 8959 (2025), Examples, Example 5, p. 2: combined wages 325,000 - 250,000 = 75,000; x 0.9% = 675.",
+  "facts": {
+    "taxYear": 2025,
+    "filingStatus": "mfj",
+    "taxpayer": {
+      "id": "taxpayer",
+      "dateOfBirth": "1978-01-01",
+      "hasValidSsn": true,
+      "canBeClaimedAsDependent": false
+    },
+    "dependents": [],
+    "w2s": [
+      {
+        "id": "w2_1",
+        "owner": "taxpayer",
+        "wages": 15000000,
+        "federalWithheld": 0,
+        "ssWages": 15000000,
+        "ssTax": 930000,
+        "medicareWages": 15000000,
+        "medicareTax": 217500
+      },
+      {
+        "id": "w2_2",
+        "owner": "spouse",
+        "wages": 17500000,
+        "federalWithheld": 0,
+        "ssWages": 17500000,
+        "ssTax": 1085000,
+        "medicareWages": 17500000,
+        "medicareTax": 253750
+      }
+    ],
+    "int1099s": [],
+    "div1099s": [],
+    "nec1099s": [],
+    "misc1099s": [],
+    "k1099s": [],
+    "businesses": [],
+    "e1098s": [],
+    "rentals": [],
+    "spouse": {
+      "id": "spouse",
+      "dateOfBirth": "1979-01-01",
+      "hasValidSsn": true,
+      "canBeClaimedAsDependent": false
+    }
+  },
+  "expect": {
+    "f8959.total": 675,
+    "sch2.additionalMedicareTax": 675
+  }
+}

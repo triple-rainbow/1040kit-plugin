@@ -1,0 +1,63 @@
+{
+  "name": "Pub 970 Example 1: MFJ, MAGI $185,000, $800 student loan interest",
+  "source": "Publication 970 (2025), Chapter 4 Student Loan Interest Deduction, Example 1, p. 34: MFJ, MAGI 185,000, interest paid 800; reduction = 800 x (185,000 - 170,000) / 30,000 = 400; deduction 400. MAGI built as two W-2s totalling 185,000 with no other adjustments.",
+  "facts": {
+    "taxYear": 2025,
+    "filingStatus": "mfj",
+    "taxpayer": {
+      "id": "taxpayer",
+      "dateOfBirth": "1990-02-01",
+      "hasValidSsn": true,
+      "canBeClaimedAsDependent": false
+    },
+    "dependents": [],
+    "w2s": [
+      {
+        "id": "w2_1",
+        "owner": "taxpayer",
+        "wages": 10000000,
+        "federalWithheld": 0,
+        "ssWages": 10000000,
+        "ssTax": 620000,
+        "medicareWages": 10000000,
+        "medicareTax": 145000
+      },
+      {
+        "id": "w2_2",
+        "owner": "spouse",
+        "wages": 8500000,
+        "federalWithheld": 0,
+        "ssWages": 8500000,
+        "ssTax": 527000,
+        "medicareWages": 8500000,
+        "medicareTax": 123250
+      }
+    ],
+    "int1099s": [],
+    "div1099s": [],
+    "nec1099s": [],
+    "misc1099s": [],
+    "k1099s": [],
+    "businesses": [],
+    "e1098s": [
+      {
+        "id": "e1098_1",
+        "owner": "taxpayer",
+        "interest": 80000
+      }
+    ],
+    "rentals": [],
+    "spouse": {
+      "id": "spouse",
+      "dateOfBirth": "1991-03-01",
+      "hasValidSsn": true,
+      "canBeClaimedAsDependent": false
+    }
+  },
+  "expect": {
+    "studentLoan.interestPaid": 800,
+    "studentLoan.magi": 185000,
+    "studentLoan.phaseoutRatio": 500,
+    "studentLoanInterestDeduction": 400
+  }
+}

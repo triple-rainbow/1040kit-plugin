@@ -1,0 +1,53 @@
+{
+  "name": "Form 8959 instructions Example 3 (Carl): single, $130,000 wages and $145,000 SE income",
+  "source": "Instructions for Form 8959 (2025), Examples, Example 3, p. 2: wages reduce the SE threshold to 70,000; tax on 145,000 - 70,000 = 75,000; x 0.9% = 675. SE income built as a Schedule C profit of 157,011 (x 92.35% = 145,000 on Schedule SE line 6).",
+  "facts": {
+    "taxYear": 2025,
+    "filingStatus": "single",
+    "taxpayer": {
+      "id": "taxpayer",
+      "dateOfBirth": "1978-01-01",
+      "hasValidSsn": true,
+      "canBeClaimedAsDependent": false
+    },
+    "dependents": [],
+    "w2s": [
+      {
+        "id": "w2_1",
+        "owner": "taxpayer",
+        "wages": 13000000,
+        "federalWithheld": 0,
+        "ssWages": 13000000,
+        "ssTax": 806000,
+        "medicareWages": 13000000,
+        "medicareTax": 188500
+      }
+    ],
+    "int1099s": [],
+    "div1099s": [],
+    "nec1099s": [
+      {
+        "id": "nec_1",
+        "owner": "taxpayer",
+        "payerToken": "{{PAYER:nec_1}}",
+        "nonemployeeComp": 15701100
+      }
+    ],
+    "misc1099s": [],
+    "k1099s": [],
+    "businesses": [
+      {
+        "owner": "taxpayer",
+        "name": "Example Consulting",
+        "expenses": {}
+      }
+    ],
+    "e1098s": [],
+    "rentals": []
+  },
+  "expect": {
+    "f8959.total": 675,
+    "sch2.additionalMedicareTax": 675,
+    "f8959.seIncome": 145000
+  }
+}

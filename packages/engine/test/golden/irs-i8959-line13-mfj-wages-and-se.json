@@ -1,0 +1,59 @@
+{
+  "name": "Form 8959 instructions, Line 13 example (Kathleen and Liam): MFJ, $130,000 wages and $140,000 SE income",
+  "source": "Instructions for Form 8959 (2025), Part II line 13 example, p. 3: threshold 250,000 - 130,000 = 120,000; tax on 140,000 - 120,000 = 20,000; x 0.9% = 180. SE income built as a Schedule C profit of 151,597 (x 92.35% = 140,000 on Schedule SE line 6).",
+  "facts": {
+    "taxYear": 2025,
+    "filingStatus": "mfj",
+    "taxpayer": {
+      "id": "taxpayer",
+      "dateOfBirth": "1978-01-01",
+      "hasValidSsn": true,
+      "canBeClaimedAsDependent": false
+    },
+    "dependents": [],
+    "w2s": [
+      {
+        "id": "w2_1",
+        "owner": "taxpayer",
+        "wages": 13000000,
+        "federalWithheld": 0,
+        "ssWages": 13000000,
+        "ssTax": 806000,
+        "medicareWages": 13000000,
+        "medicareTax": 188500
+      }
+    ],
+    "int1099s": [],
+    "div1099s": [],
+    "nec1099s": [
+      {
+        "id": "nec_1",
+        "owner": "spouse",
+        "payerToken": "{{PAYER:nec_1}}",
+        "nonemployeeComp": 15159700
+      }
+    ],
+    "misc1099s": [],
+    "k1099s": [],
+    "businesses": [
+      {
+        "owner": "spouse",
+        "name": "Example Consulting",
+        "expenses": {}
+      }
+    ],
+    "e1098s": [],
+    "rentals": [],
+    "spouse": {
+      "id": "spouse",
+      "dateOfBirth": "1979-01-01",
+      "hasValidSsn": true,
+      "canBeClaimedAsDependent": false
+    }
+  },
+  "expect": {
+    "f8959.total": 180,
+    "sch2.additionalMedicareTax": 180,
+    "f8959.seIncome": 140000
+  }
+}

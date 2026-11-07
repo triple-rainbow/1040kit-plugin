@@ -1,0 +1,60 @@
+{
+  "name": "Pub 501 Table 8 Example 4: dependent, 18, $7,000 wages, $500 interest, $3,000 business loss",
+  "source": "Publication 501 (2025), Standard Deduction for Dependents, Example 4, pp. 24-25: earned income 7,000 - 3,000 = 4,000; + 450 = 4,450; standard deduction 4,450. Loss built as a 1,000 1099-NEC with 4,000 of supplies.",
+  "facts": {
+    "taxYear": 2025,
+    "filingStatus": "single",
+    "taxpayer": {
+      "id": "taxpayer",
+      "dateOfBirth": "2007-03-01",
+      "hasValidSsn": true,
+      "canBeClaimedAsDependent": true
+    },
+    "dependents": [],
+    "w2s": [
+      {
+        "id": "w2_1",
+        "owner": "taxpayer",
+        "wages": 700000,
+        "federalWithheld": 0,
+        "ssWages": 700000,
+        "ssTax": 43400,
+        "medicareWages": 700000,
+        "medicareTax": 10150
+      }
+    ],
+    "int1099s": [
+      {
+        "id": "int_1",
+        "owner": "taxpayer",
+        "interest": 50000
+      }
+    ],
+    "div1099s": [],
+    "nec1099s": [
+      {
+        "id": "nec_1",
+        "owner": "taxpayer",
+        "payerToken": "{{PAYER:nec_1}}",
+        "nonemployeeComp": 100000
+      }
+    ],
+    "misc1099s": [],
+    "k1099s": [],
+    "businesses": [
+      {
+        "owner": "taxpayer",
+        "name": "Example Lawn Care",
+        "expenses": {
+          "supplies": 400000
+        }
+      }
+    ],
+    "e1098s": [],
+    "rentals": []
+  },
+  "expect": {
+    "schC.netProfit.taxpayer": -3000,
+    "standardDeduction": 4450
+  }
+}

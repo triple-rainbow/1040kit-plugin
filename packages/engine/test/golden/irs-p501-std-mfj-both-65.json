@@ -1,0 +1,44 @@
+{
+  "name": "Pub 501 Table 7 Example 3: MFJ, both 65 or older",
+  "source": "Publication 501 (2025), Standard Deduction, Examples, Example 3, p. 24: standard deduction 34,700 (the Schedule 1-A senior deduction is separate, line 13b).",
+  "facts": {
+    "taxYear": 2025,
+    "filingStatus": "mfj",
+    "taxpayer": {
+      "id": "taxpayer",
+      "dateOfBirth": "1955-01-01",
+      "hasValidSsn": true,
+      "canBeClaimedAsDependent": false
+    },
+    "dependents": [],
+    "w2s": [
+      {
+        "id": "w2_1",
+        "owner": "taxpayer",
+        "wages": 6000000,
+        "federalWithheld": 0,
+        "ssWages": 6000000,
+        "ssTax": 372000,
+        "medicareWages": 6000000,
+        "medicareTax": 87000
+      }
+    ],
+    "int1099s": [],
+    "div1099s": [],
+    "nec1099s": [],
+    "misc1099s": [],
+    "k1099s": [],
+    "businesses": [],
+    "e1098s": [],
+    "rentals": [],
+    "spouse": {
+      "id": "spouse",
+      "dateOfBirth": "1956-01-01",
+      "hasValidSsn": true,
+      "canBeClaimedAsDependent": false
+    }
+  },
+  "expect": {
+    "standardDeduction": 34700
+  }
+}
