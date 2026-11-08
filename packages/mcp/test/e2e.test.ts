@@ -23,6 +23,7 @@ import { handler as filingPrepare } from '../src/tools/filing-prepare.ts';
 import { handler as formsFill } from '../src/tools/forms-fill.ts';
 import { handler as interviewNext } from '../src/tools/interview-next.ts';
 import { handler as profileSet } from '../src/tools/profile-set.ts';
+import { handler as returnReview } from '../src/tools/return-review.ts';
 import { handler as reviewChecks } from '../src/tools/review-checks.ts';
 import { handler as workspaceInit } from '../src/tools/workspace-init.ts';
 import { FAKE, necPdf, w2Pdf } from './fixtures/make-pdfs.ts';
@@ -88,7 +89,17 @@ test('W-2 + 1099-NEC → complete return → forms and both filing packages', as
     return r;
   };
 
-  const ws = await call(workspaceInit({ year: 2025 }, deps));
+  // The one-time agreement comes first: nothing reads documents before it.
+  const first = await call(workspaceInit({ year: 2025 }, deps));
+  assert.ok(first.ok);
+  assert.equal(first.acknowledgment.agreed, false);
+  assert.equal(first.acknowledgment.text, ACKNOWLEDGMENT_TEXT);
+  const early = await call(docsExtract({ workspace: first.workspace }, deps));
+  assert.equal(!early.ok && early.error.code, 'ACK_REQUIRED');
+  const ws = await call(
+    workspaceInit({ year: 2025, acknowledged: true }, deps)
+  );
+  assert.equal(ws.ok && ws.acknowledgment.agreed, true);
   assert.ok(ws.ok, JSON.stringify(ws));
   const workspace = ws.workspace;
   await writeFile(join(ws.inbox, 'w2.pdf'), await w2Pdf());
@@ -139,12 +150,34 @@ test('W-2 + 1099-NEC → complete return → forms and both filing packages', as
   );
 
   // Interview loop: answer what's asked; fail on anything we can't answer.
+  const phases: (string | null)[] = [];
   for (let round = 0; round < 20; round++) {
     const next = await call(interviewNext({ workspace, limit: 10 }, deps));
     assert.ok(next.ok, JSON.stringify(next));
     if (next.done) break;
-    const blocking = next.questions.filter((q) => q.blocking);
+    phases.push(next.phase);
+    const blocking = next.questions.filter(
+      (q) => q.blocking && q.answer.kind !== 'multiselect'
+    );
     const set = next.questions.flatMap((q) => {
+      // "Check all that apply": none apply, so every option is false.
+      if (q.answer.kind === 'multiselect')
+        return [
+          ...q.answer.options.map((o) => ({
+            path: o.path,
+            value: answerFor(o.path) as boolean,
+            source: 'user' as const,
+          })),
+          ...(q.answer.other
+            ? [
+                {
+                  path: q.answer.other.path,
+                  value: [],
+                  source: 'user' as const,
+                },
+              ]
+            : []),
+        ];
       const value = answerFor(q.path);
       return value === undefined
         ? []
@@ -163,6 +196,15 @@ test('W-2 + 1099-NEC → complete return → forms and both filing packages', as
     assert.ok(r.ok && r.rejected.length === 0, JSON.stringify(r));
     assert.ok(round < 19, 'interview did not converge');
   }
+
+  // Income first, then deductions and credits; never back.
+  assert.equal(phases[0], 'income');
+  assert.ok(
+    phases.every(
+      (p, i) => i === 0 || !(p === 'income' && phases[i - 1] === 'deductions')
+    ),
+    JSON.stringify(phases)
+  );
 
   const calc = await call(calcReturn({ workspace }, deps));
   assert.ok(calc.ok, JSON.stringify(calc));
@@ -192,11 +234,24 @@ test('W-2 + 1099-NEC → complete return → forms and both filing packages', as
   const rev = await call(reviewChecks({ workspace }, deps));
   assert.ok(rev.ok && Array.isArray(rev.findings), JSON.stringify(rev));
 
-  // The sign-off acknowledgment comes first.
-  const noAck = await call(formsFill({ workspace }, deps));
-  assert.equal(!noAck.ok && noAck.error.code, 'ACK_REQUIRED');
-  assert.ok(!noAck.ok && noAck.error.message.includes(ACKNOWLEDGMENT_TEXT));
-  const filled = await call(formsFill({ workspace, acknowledged: true }, deps));
+  // The holistic review comes before the forms.
+  const noReview = await call(formsFill({ workspace }, deps));
+  assert.equal(!noReview.ok && noReview.error.code, 'REVIEW_REQUIRED');
+  const review = await call(returnReview({ workspace }, deps));
+  assert.ok(review.ok && review.ready, JSON.stringify(review));
+  assert.deepEqual(review.blockers, []);
+  assert.equal(review.return.summary.refundOrOwed, calc.summary.refundOrOwed);
+  assert.ok(review.confirmWithUser.length > 0);
+  // Ready isn't enough: the user has to say the numbers look good.
+  assert.equal(review.confirmed, false);
+  assert.match(review.confirmPrompt ?? '', /terms-of-service/);
+  const unconfirmed = await call(formsFill({ workspace }, deps));
+  assert.equal(!unconfirmed.ok && unconfirmed.error.code, 'REVIEW_REQUIRED');
+  const confirmed = await call(
+    returnReview({ workspace, confirmed: true }, deps)
+  );
+  assert.ok(confirmed.ok && confirmed.confirmed, JSON.stringify(confirmed));
+  const filled = await call(formsFill({ workspace }, deps));
   assert.ok(filled.ok, JSON.stringify(filled));
   assert.ok(
     filled.handwrite.includes(

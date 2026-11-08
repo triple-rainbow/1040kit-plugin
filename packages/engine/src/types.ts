@@ -290,6 +290,8 @@ export interface EitcFacts {
 
 /** Yes/no screening answers that decide whether to ask about whole topics. */
 export interface Screening {
+  /** Someone (a child or relative) lives with the filer or depends on them: ask who. */
+  hasDependents?: boolean;
   hasRentalOrRoyaltyIncome?: boolean;
   paidStudentLoanInterest?: boolean;
 }

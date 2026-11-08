@@ -48,6 +48,7 @@
     },
     "digitalAssetActivity": false,
     "screening": {
+      "hasDependents": false,
       "hasRentalOrRoyaltyIncome": false,
       "paidStudentLoanInterest": false
     },

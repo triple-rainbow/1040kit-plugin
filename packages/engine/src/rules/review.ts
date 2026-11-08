@@ -449,7 +449,7 @@ export function reviewChecks(
       severity: 'warning',
       code: 'head_of_household_may_apply',
       message:
-        'You file as single but claim a dependent who could make you head of household, which has a larger standard deduction and lower tax. Ask whether you were unmarried at year end and paid more than half the cost of keeping up the home (see the head_of_household deduction item).',
+        'You file as single but claim a dependent who could make you head of household, which has a larger standard deduction and lower tax. Ask whether you were unmarried at year end and paid more than half the cost of keeping up the home; if both are yes, change the filing status to head of household.',
       nodeIds: ['standardDeduction'],
     });
   }

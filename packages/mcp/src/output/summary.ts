@@ -78,18 +78,19 @@ export function summaryMarkdown(
 
   out.push('## Forms', '');
   out.push(result.forms.join(', '), '');
-  out.push('## Your sign-off', '');
+  out.push('## Your agreement and review', '');
   const ack = currentAcknowledgment(data);
   if (ack) {
     out.push(
-      `On ${ack.at.slice(0, 10)} (${ack.at}) you acknowledged:`,
+      `On ${ack.at.slice(0, 10)} (${ack.at}) you agreed:`,
       '',
       `> ${ack.text}`,
       ''
     );
-  } else {
+  }
+  if (data.review) {
     out.push(
-      'Not given yet for these numbers: 1040kit fills the forms only after you agree to the sign-off acknowledgment.',
+      `You reviewed this return with return_review on ${data.review.at.slice(0, 10)} (${data.review.at}).`,
       ''
     );
   }

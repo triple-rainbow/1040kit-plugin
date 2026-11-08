@@ -7,10 +7,14 @@
  */
 import { readFile } from 'node:fs/promises';
 import {
+  classifyDependent,
   getParams,
+  type Dependent,
+  type DependentCredit,
   type FormId,
   type PersonId,
   type ReturnResult,
+  type TaxFacts,
 } from '@1040kit/engine';
 import {
   PDFCheckBox,
@@ -127,18 +131,73 @@ function returnName(data: StoreData): string | undefined {
   return [t, s].filter(Boolean).join(' & ') || undefined;
 }
 
-function ageAtYearEnd(
-  dob: string | undefined,
-  year: number
-): number | undefined {
-  if (!dob) return undefined;
-  // Every birthday has passed by December 31.
-  return year - Number(dob.slice(0, 4));
+/**
+ * Which Form 1040 dependent box to check, from the engine's own
+ * classification (the same one Schedule 8812 counts): child tax credit,
+ * credit for other dependents, or neither.
+ */
+export function dependentCreditBox(
+  d: Dependent,
+  facts: TaxFacts
+): DependentCredit {
+  return classifyDependent(d, facts, getParams(facts.taxYear)).credit;
 }
 
 /** Born before January 2 of (year − 64): 65 or older for the standard-deduction add-on. */
 function senior(dob: string | undefined, year: number): boolean {
   return !!dob && dob < `${year - 64}-01-02`;
+}
+
+/**
+ * Every amount line one form prints: the engine's lines for that form, lines
+ * that repeat a value printed elsewhere (`lineAliases`, e.g. Schedule 2 line
+ * 21 = Form 1040 line 23) and the field map's `copies`, without the map's
+ * `consumed` lines (printed by their own section). The PDF filler and
+ * the Free File entry sheet both use this, so they always agree.
+ */
+export function formLineValues(
+  result: ReturnResult,
+  formId: FormId,
+  map: FieldMap | null = loadFieldMap(result.taxYear, PDF_FOR_FORM[formId])
+): Map<string, { value: number; label: string; printed: string }> {
+  const values = new Map<
+    string,
+    { value: number; label: string; printed: string }
+  >();
+  for (const n of Object.values(result.nodes)) {
+    if (n.form !== formId || !n.line) continue;
+    values.set(normLine(n.line), {
+      value: n.value,
+      label: n.label,
+      printed: n.line,
+    });
+  }
+  for (const [where, nodeId] of Object.entries(
+    getParams(result.taxYear).lineAliases
+  )) {
+    const at = where.lastIndexOf(':');
+    if (where.slice(0, at) !== formId) continue;
+    const line = normLine(where.slice(at + 1));
+    const node = result.nodes[nodeId];
+    if (node && !values.has(line))
+      values.set(line, {
+        value: node.value,
+        label: node.label,
+        printed: where.slice(at + 1),
+      });
+  }
+  for (const [target, sources] of Object.entries(map?.copies ?? {})) {
+    if (values.has(target)) continue;
+    const src = sources.find((s) => values.has(s));
+    if (src) values.set(target, { ...values.get(src)!, printed: target });
+  }
+  // Lines the form prints in its own section (Schedule E 1a, 1b and 2:
+  // address, property type, days), not as an amount on its line.
+  for (const base of map?.consumed ?? []) {
+    for (const line of [...values.keys()])
+      if (line.split(/[:.]/)[0] === base) values.delete(line);
+  }
+  return values;
 }
 
 export async function fillReturn(
@@ -164,28 +223,10 @@ export async function fillReturn(
     const f = new Filler(form, FORM_TITLES[formId]);
     const owner: PersonId = formId.endsWith('.spouse') ? 'spouse' : 'taxpayer';
 
-    // Lines from the engine.
-    const values = new Map<string, number>();
-    for (const n of Object.values(result.nodes)) {
-      if (n.form !== formId || !n.line) continue;
-      values.set(normLine(n.line), n.value);
-    }
-    // Lines that repeat a value printed elsewhere (Schedule 2 line 21 = Form 1040 line 23).
-    for (const [where, nodeId] of Object.entries(getParams(year).lineAliases)) {
-      const at = where.lastIndexOf(':');
-      if (where.slice(0, at) !== formId) continue;
-      const line = normLine(where.slice(at + 1));
-      const node = result.nodes[nodeId];
-      if (node && !values.has(line)) values.set(line, node.value);
-    }
-    for (const [target, sources] of Object.entries(map.copies ?? {})) {
-      if (values.has(target)) continue;
-      const src = sources.find((s) => values.has(s));
-      if (src) values.set(target, values.get(src)!);
-    }
-    const consumed = new Set(map.consumed ?? []);
+    const values = new Map(
+      [...formLineValues(result, formId, map)].map(([l, v]) => [l, v.value])
+    );
     for (const [line, value] of values) {
-      if (consumed.has(line.split(/[:.]/)[0]!)) continue;
       if (value === 0) continue;
       const field = map.lines[line];
       if (!field) {
@@ -380,9 +421,8 @@ function fill1040(
     f.check(row.student!, d.fullTimeStudent === true);
     f.check(row.disabled!, d.permanentlyDisabled === true);
     if (has8812) {
-      const age = ageAtYearEnd(d.dateOfBirth, year);
-      const ctc = age !== undefined && age < 17 && d.hasValidSsn === true;
-      f.check(ctc ? row.ctc! : row.odc!);
+      const credit = dependentCreditBox(d, facts);
+      if (credit !== 'none') f.check(credit === 'ctc' ? row.ctc! : row.odc!);
     }
   });
 }

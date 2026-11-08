@@ -91,8 +91,9 @@ export function k1099(
   return { id, owner: 'taxpayer', grossAmount: cents, ...extra };
 }
 
-/** Both topic screening questions answered "no". */
+/** Every topic screening question answered "no". */
 export const screeningNo: Screening = {
+  hasDependents: false,
   hasRentalOrRoyaltyIncome: false,
   paidStudentLoanInterest: false,
 };

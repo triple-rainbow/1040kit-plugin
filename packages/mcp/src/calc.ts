@@ -31,6 +31,25 @@ export function factsHash(facts: TaxFacts): string {
     .digest('hex');
 }
 
+/**
+ * What a return_review covers: the facts, the documents and their status
+ * (a new or unreadable document must be reviewed too), and the names and
+ * address the forms print. Any change makes an earlier review stale.
+ */
+export function reviewHash(data: StoreData): string {
+  return createHash('sha256')
+    .update(
+      JSON.stringify(
+        stable({
+          facts: data.facts,
+          docs: data.docs.map((d) => [d.docId, d.status, d.supersededBy ?? '']),
+          identity: data.identity,
+        })
+      )
+    )
+    .digest('hex');
+}
+
 /** Calls the engine; engine failures become ENGINE_ERROR envelopes. */
 export function engineCall<T>(fn: () => T): T {
   try {

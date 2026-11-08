@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { computeReturn } from '../src/compute.ts';
+import { requiredFacts } from '../src/required.ts';
 import { checkScope } from '../src/scope.ts';
 import type { OutOfScopeFlags, TaxFacts } from '../src/types.ts';
 import { div1099, int1099, makeFacts, nec, w2 } from './helpers.ts';
@@ -319,4 +320,19 @@ test('EIC after a prior disallowance -> eitc_8862', () => {
   assert.ok(codes(f).includes('eitc_8862'));
   f.eitc = { priorDisallowance: false };
   assert.ok(!codes(f).includes('eitc_8862'));
+});
+
+test('a yes to "someone depends on you" asks who, even when single', () => {
+  const facts = makeFacts({
+    filingStatus: 'single',
+    screening: { hasDependents: true },
+  });
+  const paths = requiredFacts(facts).map((m) => m.path);
+  assert.ok(paths.includes('dependents'), JSON.stringify(paths));
+  const none = requiredFacts({
+    ...facts,
+    screening: { hasDependents: false },
+  }).map((m) => m.path);
+  assert.ok(!none.includes('dependents'));
+  assert.ok(!none.includes('screening.hasDependents'));
 });

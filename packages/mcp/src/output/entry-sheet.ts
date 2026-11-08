@@ -1,8 +1,9 @@
 import type { ReturnResult } from '@1040kit/engine';
 
-import { printedLines } from '../calc.ts';
+import { compareLines, FORM_ORDER } from '../calc.ts';
 import type { StoreData } from '../store/types.ts';
 import { FORM_TITLES, formName } from './field-maps.ts';
+import { dependentCreditBox, formLineValues } from './fill.ts';
 import {
   eicChildren,
   fullName,
@@ -26,9 +27,21 @@ export function entrySheetMarkdown(
   result: ReturnResult
 ): string {
   const y = result.taxYear;
-  const lines = printedLines(result).filter(
-    (l) => l.value !== 0 && l.form !== 'schEIC'
-  );
+  // The same values the PDF prints: only forms on this return, with the
+  // lines that repeat a value from another form.
+  const lines = FORM_ORDER.filter(
+    (f) => result.forms.includes(f) && f !== 'schEIC'
+  )
+    .flatMap((form) =>
+      [...formLineValues(result, form).values()].map((v) => ({
+        form,
+        line: v.printed,
+        label: v.label,
+        value: v.value,
+      }))
+    )
+    .filter((l) => l.value !== 0)
+    .sort(compareLines);
   const out: string[] = [];
   out.push(`# ${y} return — Free File Fillable Forms entry sheet`, '');
   out.push(
@@ -62,10 +75,31 @@ export function entrySheetMarkdown(
       `- Address: ${[id.address.street, id.address.apt, id.address.city, id.address.state, id.address.zip].filter(Boolean).join(', ')}`
     );
   }
+  const STATUS: Record<string, string> = {
+    single: 'Single',
+    mfj: 'Married filing jointly',
+    hoh: 'Head of household',
+  };
+  if (data.facts.filingStatus)
+    out.push(
+      `- Filing status: check **${STATUS[data.facts.filingStatus] ?? data.facts.filingStatus}**`
+    );
+  if (data.facts.digitalAssetActivity !== undefined)
+    out.push(
+      `- Digital assets question: check **${data.facts.digitalAssetActivity ? 'Yes' : 'No'}**`
+    );
+  const has8812 = result.forms.includes('sch8812');
   data.facts.dependents.forEach((d, i) => {
     const n = id.dependents?.[d.id];
+    const credit = has8812 ? dependentCreditBox(d, data.facts) : 'none';
+    const box =
+      credit === 'ctc'
+        ? '; check **Child tax credit**'
+        : credit === 'odc'
+          ? '; check **Credit for other dependents**'
+          : '';
     out.push(
-      `- Dependent ${i + 1}: ${[n?.firstName, n?.lastName].filter(Boolean).join(' ') || d.id}, ${d.relationship ?? ''}, SSN: ${TYPE_YOURSELF}`
+      `- Dependent ${i + 1}: ${[n?.firstName, n?.lastName].filter(Boolean).join(' ') || d.id}, ${d.relationship ?? ''}, SSN: ${TYPE_YOURSELF}${box}`
     );
   });
   out.push('');

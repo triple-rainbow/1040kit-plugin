@@ -25,6 +25,8 @@ export interface ProvenanceEntry {
   at: string;
   /** Set when a user answer replaced a value read from a document. */
   overrides?: 'doc';
+  /** The value was removed (profile_set null): kept for the record, but not an answer. */
+  removed?: true;
 }
 
 export type DocKind =
@@ -112,12 +114,19 @@ export interface LastCalc {
   result: ReturnResult;
 }
 
-/** The user's sign-off before forms_fill (see output/acknowledgment.ts). */
+/** The user's one-time agreement at the start (see output/acknowledgment.ts). */
 export interface Acknowledgment {
   text: string;
   at: string;
-  /** The facts the user signed off on; any change requires a new sign-off. */
-  factsHash: string;
+}
+
+/** The last return_review that found nothing blocking (see tools/return-review.ts). */
+export interface Review {
+  at: string;
+  /** reviewHash of what was reviewed (facts, documents, names and address). */
+  hash: string;
+  /** Set when the user confirmed these numbers look good (return_review confirmed: true). */
+  confirmedAt?: string;
 }
 
 export interface StoreData {
@@ -140,4 +149,5 @@ export interface StoreData {
   /** `${owner}:${file}` → what that import contributed. */
   expenseImports: Record<string, ExpenseImport>;
   acknowledgment?: Acknowledgment;
+  review?: Review;
 }

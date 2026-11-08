@@ -292,7 +292,10 @@ export function applySets(
     }
     const entry: ProvenanceEntry = { source: req.source, at };
     if (req.note) entry.note = req.note.slice(0, 200);
-    if (req.value === null) entry.note = entry.note ?? 'removed';
+    if (req.value === null) {
+      entry.note = entry.note ?? 'removed';
+      entry.removed = true;
+    }
     if (prev?.source === 'doc' || prev?.overrides === 'doc') {
       entry.overrides = 'doc';
       if (prev.docId) entry.docId = prev.docId;
@@ -364,8 +367,9 @@ export function describeSource(
 
 /** True when the path (or anything under it) has an answer. */
 export function isAnswered(data: StoreData, path: string): boolean {
-  if (data.provenance[path] || data.answers[path] !== undefined) return true;
-  return Object.keys(data.provenance).some((k) =>
-    prefixes(path).some((p) => k.startsWith(p))
+  if (data.answers[path] !== undefined) return true;
+  return Object.entries(data.provenance).some(
+    ([k, e]) =>
+      !e.removed && (k === path || prefixes(path).some((p) => k.startsWith(p)))
   );
 }

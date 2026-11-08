@@ -326,6 +326,7 @@ export const taxFactsSchema = z.strictObject({
     .optional(),
   screening: z
     .strictObject({
+      hasDependents: z.boolean().optional(),
       hasRentalOrRoyaltyIncome: z.boolean().optional(),
       paidStudentLoanInterest: z.boolean().optional(),
     })
