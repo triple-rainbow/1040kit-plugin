@@ -38,8 +38,8 @@ const states: TaxFacts[] = [
   makeFacts({ filingStatus: 'single', screening: { hasDependents: true } }),
   makeFacts({
     filingStatus: 'single',
-    w2s: [w2(1500000)],
-    nec1099s: [nec(500000)],
+    w2s: [w2('w2_1', 1500000)],
+    nec1099s: [nec('nec_1', 500000)],
     screening: { paidStudentLoanInterest: true },
   }),
   ...readdirSync(dir)
