@@ -99,7 +99,7 @@ const PAGE = `<!doctype html>
   .check input { width: 18px; height: 18px; margin: 1px 0 0; flex: none; accent-color: var(--accent); max-width: none; padding: 0; }
   .check.none { border-top: 1px solid var(--line); margin-top: 4px; padding-top: 10px; border-radius: 0 0 8px 8px; }
   .other-text { margin: 2px 0 4px 36px; max-width: calc(100% - 44px); width: 320px; }
-  .other-hint { margin: 0 0 4px 36px; }
+  .other-hint { margin: 0 0 4px 36px; color: var(--bad); font-size: 13px; }
   .q.saved .check { pointer-events: none; }
 </style>
 </head>
@@ -168,10 +168,13 @@ function multiselect(q, a) {
     return i;
   };
   const otherInput = el('input', { type: 'text', class: 'other-text', placeholder: 'What was it?', 'aria-label': 'Describe the other situation', hidden: '' });
-  const otherHint = el('p', { class: 'err other-hint', hidden: '' }, 'Describe it in a few words, or untick “Something else”.');
+  // Its own class: save() clears '.err' messages, and this one must stay
+  // until the box is filled. Shown once the user leaves the box empty.
+  const otherHint = el('p', { class: 'hint other-hint', hidden: '' }, 'Describe it in a few words, or untick “Something else”.');
+  let otherTouched = false;
   const update = () => {
     const other = otherOn ? otherText.trim() : '';
-    otherHint.hidden = !(otherOn && !other);
+    otherHint.hidden = !(otherOn && !other && otherTouched);
     if (otherOn && !other) { answers.delete(q.path); refreshBar(); return; }
     if (!none && picked.size === 0 && !other) { answers.delete(q.path); refreshBar(); return; }
     const sets = a.options.map((o) => ({ path: o.path, value: picked.has(o.path) }));
@@ -194,6 +197,7 @@ function multiselect(q, a) {
       update();
     });
     otherInput.addEventListener('input', () => { otherText = otherInput.value; update(); });
+    otherInput.addEventListener('blur', () => { otherTouched = true; update(); });
     box.append(otherInput, otherHint);
   }
   noneBox = row(a.noneLabel, 'none', (on) => {
