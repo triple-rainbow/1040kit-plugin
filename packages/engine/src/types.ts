@@ -434,7 +434,10 @@ export interface MissingFact {
   path: string;
   /** Plain-English question, ≤ 140 chars. */
   question: string;
+  /** Why it matters, in plain English (shown to the user). */
   why: string;
+  /** The IRS form, line or publication behind it, for the AI to cite when asked. */
+  cite?: string;
   blocking: boolean;
   /** Lower asks first. */
   priority: number;
