@@ -14,7 +14,7 @@ import {
 } from './ui/interview-widget.ts';
 
 export const SERVER_NAME = '1040kit';
-export const SERVER_VERSION = '0.1.0';
+export const SERVER_VERSION = '0.1.1';
 
 const INSTRUCTIONS = `1040kit prepares a US federal income tax return on this computer.
 Rules: never do arithmetic or state tax law yourself — quote numbers from calc_return/explain_line and cite their citations or kb_search passages. 1040kit never stores SSNs, ITINs or bank account numbers: never ask for them in chat; the user writes them on the printed forms (forms_fill lists every box in "handwrite") or types them into Free File Fillable Forms. EINs appear only as tokens like {{EIN:w2_1}}. forms_fill needs the user's sign-off acknowledgment first (ACK_REQUIRED). Documents go in the workspace inbox, not the chat. This is not tax advice: the user is the preparer and signs the return.`;
