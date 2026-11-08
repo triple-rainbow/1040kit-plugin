@@ -353,7 +353,7 @@ export const lineAliasLabels: Record<string, string> = {
   'schSE:3': 'Combine lines 1a, 1b and 2',
   'schSE:6': 'Add lines 4c and 5b',
   'schSE:8d': 'Add lines 8a, 8b and 8c',
-  'sch8812:1': 'Amount from Form 1040, line 11 (adjusted gross income)',
+  'sch8812:1': 'Amount from Form 1040, line 11a (adjusted gross income)',
   'sch8812:3': 'Add lines 1 and 2d',
   'f1040:11b': 'Amount from line 11a (adjusted gross income)',
   'f1040:24c': 'Total tax (line 24a plus line 24b)',

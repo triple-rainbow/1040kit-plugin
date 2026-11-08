@@ -150,7 +150,7 @@ export function entrySheetMarkdown(
       const who =
         w.owner === 'spouse' && f.filingStatus === 'mfj' ? ' (spouse)' : '';
       out.push(
-        `- W-2 ${i + 1}${who}: ${data.labels[w.id] ?? 'employer'}; employer EIN (box b) ${TYPE_YOURSELF} from the W-2; box 1 ${cents(w.wages)}; box 2 ${cents(w.federalWithheld)}; box 3 ${cents(w.ssWages)}; box 4 ${cents(w.ssTax)}; box 5 ${cents(w.medicareWages)}; box 6 ${cents(w.medicareTax)}` +
+        `- W-2 ${i + 1}${who}: ${data.labels[w.id] ?? 'the employer named on your W-2'}; employer EIN (box b) ${TYPE_YOURSELF} from the W-2; box 1 ${cents(w.wages)}; box 2 ${cents(w.federalWithheld)}; box 3 ${cents(w.ssWages)}; box 4 ${cents(w.ssTax)}; box 5 ${cents(w.medicareWages)}; box 6 ${cents(w.medicareTax)}` +
           (w.ssTips ? `; box 7 ${cents(w.ssTips)}` : '') +
           (w.allocatedTips ? `; box 8 ${cents(w.allocatedTips)}` : '') +
           (w.box12?.length

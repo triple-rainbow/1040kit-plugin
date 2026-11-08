@@ -93,7 +93,7 @@ export function summaryMarkdown(
   }
   if (data.review) {
     out.push(
-      `You reviewed this return with return_review on ${data.review.at.slice(0, 10)} (${data.review.at}).`,
+      `You reviewed this return${data.review.confirmedAt ? ` and confirmed the numbers on ${data.review.confirmedAt.slice(0, 10)}` : ` on ${data.review.at.slice(0, 10)}`}.`,
       ''
     );
   }

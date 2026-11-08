@@ -217,7 +217,7 @@ export function requiredFactsFrom(
       path: 'dependents',
       question:
         'Who lived with you over half the year as your qualifying person? Name, relationship, date of birth, months with you, valid SSN?',
-      why: 'Head of household needs a qualifying person who lived with you.',
+      why: 'Head of household needs a qualifying person, usually someone who lived with you.',
       blocking: true,
       priority: 19,
     });
@@ -293,7 +293,7 @@ export function requiredFactsFrom(
       add({
         path: `${base}.fullTimeStudent`,
         question: `Was ${n} a full-time student for at least five months of the year?`,
-        why: 'A child aged 19 to 23 counts only if they were a full-time student.',
+        why: 'A child aged 19 to 23 counts as a qualifying child only if they were a full-time student.',
         blocking: true,
         priority: 24,
       });
@@ -397,7 +397,7 @@ export function requiredFactsFrom(
         question:
           'Was any money on the 1099-K personal, such as gifts, shared bills, or personal items sold at a loss? How much?',
         why: 'Personal payments on a 1099-K, like friends paying you back, aren’t business income.',
-        cite: 'i1040gi, Schedule 1, Form(s) 1099-K',
+        cite: 'Form 1040 instructions, Schedule 1, Form(s) 1099-K',
         blocking: false,
         priority: 33,
       });
@@ -542,7 +542,7 @@ export function requiredFactsFrom(
         question:
           'Are you (or your spouse) the one legally required to pay the student loan, not a parent or someone else?',
         why: 'Only interest you were legally required to pay counts.',
-        cite: 'i1040gi Schedule 1 line 21; Pub. 970',
+        cite: 'Form 1040 instructions, Schedule 1 line 21; Pub. 970',
         blocking: true,
         priority: 45,
       });
@@ -551,8 +551,8 @@ export function requiredFactsFrom(
         path: 'studentLoan.qualifiedLoan',
         question:
           'Was the loan used only for college costs of you, your spouse or a dependent, and not from a relative?',
-        why: 'Only a loan taken out just to pay for education counts.',
-        cite: 'i1040gi Schedule 1 line 21, Qualified student loan',
+        why: 'Only a loan taken out just to pay for education, and not from a relative, counts.',
+        cite: 'Form 1040 instructions, Schedule 1 line 21, Qualified student loan',
         blocking: true,
         priority: 46,
       });
@@ -585,7 +585,7 @@ export function requiredFactsFrom(
         question:
           'Could you be claimed as the qualifying child of another person, such as a parent you lived with, this year?',
         why: 'You can’t get the earned income credit if someone else can claim you as their qualifying child.',
-        cite: 'i1040gi line 27a',
+        cite: 'Form 1040 instructions, line 27a',
         blocking: true,
         priority: 61,
       });
