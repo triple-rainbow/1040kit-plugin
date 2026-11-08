@@ -204,3 +204,47 @@ test('rental/royalty and student loan screening questions replace the old out-of
   assert.ok(!byPath.has('outOfScope.studentLoanInterest'));
   assert.ok(!paths(ready()).some((p) => p.startsWith('screening.')));
 });
+
+test('Schedule C header items and line 30(a) are asked for each business', () => {
+  const facts = (biz: Partial<TaxFacts['businesses'][number]> = {}) =>
+    makeFacts({
+      filingStatus: 'single',
+      nec1099s: [nec('nec_1', 3000000)],
+      businesses: [{ owner: 'taxpayer', name: 'Design', expenses: {}, ...biz }],
+    });
+  const paths = (f: TaxFacts) =>
+    requiredFacts(f)
+      .filter((m) => m.path.startsWith('businesses[taxpayer].'))
+      .map((m) => [m.path.slice('businesses[taxpayer].'.length), m.blocking]);
+  assert.deepEqual(paths(facts()), [
+    ['materiallyParticipated', true],
+    ['principalBusinessCode', true],
+    ['accountingMethod', true],
+    ['startedOrAcquiredThisYear', true],
+    ['madePaymentsRequiring1099', true],
+  ]);
+  const answered = {
+    materiallyParticipated: true,
+    principalBusinessCode: '541430',
+    accountingMethod: 'cash' as const,
+    startedOrAcquiredThisYear: false,
+    madePaymentsRequiring1099: false,
+  };
+  assert.deepEqual(paths(facts(answered)), []);
+  // Follow-ups: line J after an "I: Yes", the method after "Other", 30(a).
+  assert.deepEqual(
+    paths(
+      facts({
+        ...answered,
+        accountingMethod: 'other',
+        madePaymentsRequiring1099: true,
+        homeOffice: { method: 'simplified', squareFeet: 150 },
+      })
+    ),
+    [
+      ['accountingMethodOther', true],
+      ['filedRequired1099s', true],
+      ['homeOffice.homeSquareFeet', true],
+    ]
+  );
+});

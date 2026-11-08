@@ -316,7 +316,7 @@ export async function validateMaps(
       r.disabledNo,
     ]);
     for (const [k, v] of Object.entries(map.fields ?? {})) {
-      (/^(status|digitalAssets|line7|line12|line19|line20|dependentClaimable|senior|blind|foreign|q1099)/.test(
+      (/^(box\.|status|digitalAssets|line7|line12|line19|line20|dependentClaimable|senior|blind|foreign|q1099)/.test(
         k
       )
         ? boxes
@@ -514,8 +514,24 @@ function fillSchC(
   f.text(F['businessName']!, biz.name);
   f.text(F['principalBusiness']!, data.identity[owner]?.occupation ?? biz.name);
   f.text(F['businessCode']!, biz.principalBusinessCode);
-  if (biz.homeOffice?.method === 'simplified')
-    f.text(F['homeOffice.businessSqFt']!, String(biz.homeOffice.squareFeet));
+  if (biz.accountingMethod) {
+    f.check(F[`box.accounting.${biz.accountingMethod}`]!);
+    if (biz.accountingMethod === 'other')
+      f.text(F['accountingOther']!, biz.accountingMethodOther);
+  }
+  const yesNo = (key: string, v: boolean | undefined) => {
+    if (v !== undefined) f.check(F[`box.${key}.${v ? 'yes' : 'no'}`]!);
+  };
+  yesNo('materiallyParticipated', biz.materiallyParticipated);
+  if (biz.startedOrAcquiredThisYear) f.check(F['box.startedOrAcquired']!);
+  yesNo('payments1099', biz.madePaymentsRequiring1099);
+  if (biz.madePaymentsRequiring1099) yesNo('filed1099', biz.filedRequired1099s);
+  if (biz.homeOffice?.method === 'simplified') {
+    const { squareFeet, homeSquareFeet } = biz.homeOffice;
+    if (homeSquareFeet !== undefined)
+      f.text(F['homeOffice.homeSqFt']!, String(homeSquareFeet));
+    f.text(F['homeOffice.businessSqFt']!, String(squareFeet));
+  }
   const other = values.get('48') ?? values.get('27b');
   if (other) {
     f.text(F['otherExpense1.name']!, OTHER_EXPENSE_DESCRIPTION);

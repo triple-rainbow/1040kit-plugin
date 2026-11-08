@@ -375,6 +375,96 @@ export function requiredFactsFrom(
       });
     }
   }
+  // Schedule C header (items B and F-J) and line 30(a): the form asks them,
+  // the engine needs only line G (a "No" is out of scope).
+  for (const o of owners) {
+    const b = facts.businesses.find((x) => x.owner === o);
+    if (!b) continue;
+    const base = `businesses[${o}]`;
+    const you = who(o);
+    const ask = (
+      field: string,
+      question: string,
+      why: string,
+      cite: string,
+      priority: number
+    ) =>
+      add({
+        path: `${base}.${field}`,
+        question,
+        why,
+        cite,
+        blocking: true,
+        priority,
+      });
+    if (b.materiallyParticipated === undefined)
+      ask(
+        'materiallyParticipated',
+        `Did ${you} work in the business regularly and in a real way this year, for example over 500 hours or doing nearly all the work?`,
+        'Most people who run their own business do. If not, the business counts as passive, with loss rules 1040kit can’t handle yet.',
+        'Schedule C, line G; Pub. 925, Material Participation',
+        34
+      );
+    if (!b.principalBusinessCode)
+      ask(
+        'principalBusinessCode',
+        'Which 6-digit IRS code best describes the business? I can suggest one from the IRS list.',
+        'Your business form asks for a code that names the main kind of work the business does.',
+        'Schedule C, line B; Schedule C instructions, Principal Business or Professional Activity Codes',
+        35
+      );
+    if (b.accountingMethod === undefined)
+      ask(
+        'accountingMethod',
+        'Do you count income when you’re paid and expenses when you pay them (cash), or when they’re billed (accrual)?',
+        'Your business form asks which method the business uses. Most freelancers use cash.',
+        'Schedule C, line F; Pub. 334, Accounting Methods',
+        36
+      );
+    else if (b.accountingMethod === 'other' && !b.accountingMethodOther)
+      ask(
+        'accountingMethodOther',
+        'In a few words, what accounting method does the business use?',
+        'Your business form asks you to describe a method other than cash or accrual.',
+        'Schedule C, line F',
+        36
+      );
+    if (b.startedOrAcquiredThisYear === undefined)
+      ask(
+        'startedOrAcquiredThisYear',
+        `Did ${you} start or buy this business during ${year}?`,
+        'Your business form has a box for a business that is new this year.',
+        'Schedule C, line H',
+        37
+      );
+    if (b.madePaymentsRequiring1099 === undefined)
+      ask(
+        'madePaymentsRequiring1099',
+        'Did the business make payments this year that require filing a Form 1099, such as paying a contractor?',
+        'Your business form asks whether the business had to send any 1099s.',
+        'Schedule C, line I; General Instructions for Certain Information Returns',
+        38
+      );
+    else if (b.madePaymentsRequiring1099 && b.filedRequired1099s === undefined)
+      ask(
+        'filedRequired1099s',
+        'Did you file, or will you file, all the Forms 1099 the business is required to send?',
+        'Your business form asks this after a Yes on the 1099 question.',
+        'Schedule C, line J',
+        38
+      );
+    if (
+      b.homeOffice?.method === 'simplified' &&
+      b.homeOffice.homeSquareFeet === undefined
+    )
+      ask(
+        'homeOffice.homeSquareFeet',
+        'How many square feet is your whole home?',
+        'The simplified home office method asks for the size of your whole home next to the office.',
+        'Schedule C, line 30(a)',
+        39
+      );
+  }
   for (const m of ownedOnReturn(facts, facts.misc1099s)) {
     if (m.treatAsBusiness !== undefined) continue;
     const rentsOrRoyalties = (m.rents ?? 0) > 0 || (m.royalties ?? 0) > 0;

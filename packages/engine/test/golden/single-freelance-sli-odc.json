@@ -65,9 +65,15 @@
           "utilities": 60000
         },
         "name": "freelance graphic design",
+        "principalBusinessCode": "541430",
+        "accountingMethod": "cash",
+        "materiallyParticipated": true,
+        "startedOrAcquiredThisYear": false,
+        "madePaymentsRequiring1099": false,
         "homeOffice": {
           "method": "simplified",
-          "squareFeet": 200
+          "squareFeet": 200,
+          "homeSquareFeet": 900
         },
         "vehicle": {
           "businessMiles": 3000
