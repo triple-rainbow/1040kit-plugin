@@ -189,6 +189,10 @@ test('filing_prepare needs the review; the entry sheet matches the return', asyn
   assert.match(md, /- Filing status: check \*\*Single\*\*/);
   assert.match(md, /- Digital assets question: check \*\*No\*\*/);
   assert.match(md, /\| Form 1040 \| 1a \| .* \| 90,000 \|/);
+  // Free File's Step 2 needs the W-2 itself, with its withholding.
+  assert.match(md, /## Step 2: your W-2s/);
+  assert.match(md, /W-2 1: .*box 1 90000\.00; box 2 11000\.00/);
+  assert.match(md, /employer EIN \(box b\) \*\*type this yourself\*\*/);
 });
 
 test('removing an answer asks it again', async () => {

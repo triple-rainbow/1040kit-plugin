@@ -103,3 +103,14 @@ test('every copy alias points at an existing node and a different line of the sa
     }
   }
 });
+
+test('every alias description belongs to a real alias line', () => {
+  const aliases = [2025, 2026].flatMap((y) =>
+    Object.keys(getParams(y as 2025 | 2026).lineAliases).map((k) => {
+      const at = k.lastIndexOf(':');
+      return `${k.slice(0, at).split('.')[0]}:${k.slice(at + 1)}`;
+    })
+  );
+  for (const key of Object.keys(getParams(2025).lineAliasLabels))
+    assert.ok(aliases.includes(key), `${key} is not an alias line`);
+});

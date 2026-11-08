@@ -16,6 +16,7 @@ import { pct } from '../money.ts';
 import {
   formLines2026,
   lineAliases2026,
+  lineAliasLabels,
   schEExpenseLines2026,
 } from './lines.ts';
 import { ty2025 } from './ty2025.ts';
@@ -211,4 +212,5 @@ export const ty2026: YearParams = {
   formLines: formLines2026,
   schEExpenseLines: schEExpenseLines2026,
   lineAliases: lineAliases2026,
+  lineAliasLabels,
 };

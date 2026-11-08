@@ -11,6 +11,7 @@ import { pct } from '../money.ts';
 import {
   formLines2025,
   lineAliases2025,
+  lineAliasLabels,
   schEExpenseLines2025,
 } from './lines.ts';
 import type { YearParams } from './types.ts';
@@ -255,4 +256,5 @@ export const ty2025: YearParams = {
   formLines: formLines2025,
   schEExpenseLines: schEExpenseLines2025,
   lineAliases: lineAliases2025,
+  lineAliasLabels,
 };

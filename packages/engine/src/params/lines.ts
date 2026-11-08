@@ -341,6 +341,28 @@ function copyLines(): Record<string, string> {
   return out;
 }
 
+/**
+ * Descriptions for alias lines whose source node's label would describe the
+ * wrong line (Schedule C line 5 is gross profit, not gross income). Keyed by
+ * "<form without owner>:<line>". Aliases not listed use the node's label.
+ */
+export const lineAliasLabels: Record<string, string> = {
+  'schC:3': 'Gross receipts less returns and allowances (line 1 minus line 2)',
+  'schC:5': 'Gross profit (line 3 minus line 4)',
+  'schC:48': 'Total other expenses (Part V)',
+  'schSE:3': 'Combine lines 1a, 1b and 2',
+  'schSE:6': 'Add lines 4c and 5b',
+  'schSE:8d': 'Add lines 8a, 8b and 8c',
+  'sch8812:1': 'Amount from Form 1040, line 11 (adjusted gross income)',
+  'sch8812:3': 'Add lines 1 and 2d',
+  'f1040:11b': 'Amount from line 11a (adjusted gross income)',
+  'f1040:24c': 'Total tax (line 24a plus line 24b)',
+  'f1040:32c': 'Total other payments and refundable credits',
+  'sch1:10': 'Additional income (combine lines 1 through 7 and 9)',
+  'sch1:26': 'Adjustments to income (add lines 11 through 23 and 25)',
+  'sch2:21': 'Total other taxes',
+};
+
 /** Other places a node's value prints, for "<form>:<line>" lookups. */
 export const lineAliases2025: Record<string, string> = {
   ...copyLines(),
