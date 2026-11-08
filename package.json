@@ -1,6 +1,6 @@
 {
   "name": "1040kit-plugin",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "type": "module",
   "description": "1040kit: AI tax software for self-employed filers that runs on your computer. Tax engine, MCP server and AI assistant plugins.",
