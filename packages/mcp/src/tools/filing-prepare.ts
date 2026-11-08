@@ -9,7 +9,8 @@ import { FORM_TITLES } from '../output/field-maps.ts';
 import { assertNoVaultValues } from '../output/guard.ts';
 import { handwriteText, identifierBoxes } from '../output/identifiers.ts';
 import { mailingAddress, mailingMarkdown } from '../output/mail.ts';
-import { readyResult } from '../output/ready.ts';
+import { requireAcknowledgment } from '../output/acknowledgment.ts';
+import { readyResult, requireReview } from '../output/ready.ts';
 import { summaryMarkdown } from '../output/summary.ts';
 import { openStore, outputsPath } from '../store/workspace.ts';
 import { workspaceSchema, type ToolDefinition } from './common.ts';
@@ -26,7 +27,9 @@ export const inputSchema = {
 export const handler = defineTool(inputSchema, async (input, deps) => {
   const store = await openStore(input.workspace);
   const data = await store.read();
+  requireAcknowledgment(data);
   const result = readyResult(data);
+  requireReview(data);
   const dir = outputsPath(store.workspace);
   const y = result.taxYear;
   const files: { path: string; text: string }[] = [];

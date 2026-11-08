@@ -28,6 +28,13 @@ const DOC_NOT_ON_RETURN: Record<string, string> = {
   unsupported_form: 'is a form 1040kit does not handle yet',
 };
 
+/** Deductions that are choices to consider, not things the user may have missed. */
+const WHAT_IFS = new Set(['sep_ira']);
+/** A deduction that is the other method of one already claimed. */
+const ALTERNATIVE_OF: Record<string, string> = {
+  home_office_actual: 'home_office',
+};
+
 const STATUS_LABEL: Record<string, string> = {
   single: 'Single',
   mfj: 'Married filing jointly',
@@ -74,13 +81,28 @@ export const handler = defineTool(inputSchema, async (input, deps) => {
           message: f.message,
         });
       }
-      const unclaimed = engineCall(() =>
+      // One line for every deduction still open, not one item each: the
+      // user already went through them in the deductions checklist. Skip
+      // what-ifs, alternatives of something claimed, and anything a check
+      // above already raised.
+      const opps = engineCall(() =>
         deps.engine.findDeductions(data.facts, result)
-      ).filter((o) => o.status === 'possible');
-      for (const o of unclaimed)
+      );
+      const claimed = new Set(
+        opps.filter((o) => o.status === 'claimed').map((o) => o.id)
+      );
+      const raised = attention.map((a) => a.code).join(' ');
+      const unclaimed = opps.filter(
+        (o) =>
+          o.status === 'possible' &&
+          !WHAT_IFS.has(o.id) &&
+          !(ALTERNATIVE_OF[o.id] && claimed.has(ALTERNATIVE_OF[o.id]!)) &&
+          !raised.includes(o.id)
+      );
+      if (unclaimed.length)
         attention.push({
-          code: `deduction:${o.id}`,
-          message: `${o.title} is not claimed. Confirm the user doesn't qualify: ${o.question}`,
+          code: 'deductions:unclaimed',
+          message: `Not claimed: ${unclaimed.map((o) => o.title).join('; ')}. Fine if the user said no to these in the deductions checklist; otherwise ask about them now.`,
         });
     }
     for (const [path, p] of Object.entries(data.provenance)) {
@@ -100,6 +122,25 @@ export const handler = defineTool(inputSchema, async (input, deps) => {
     else delete data.review;
 
     const used = data.docs.filter((d) => d.status === 'extracted');
+    const f = data.facts;
+    const count = (n: number, one: string) =>
+      n === 0 ? [] : [`${n} ${one}${n === 1 ? '' : 's'}`];
+    const formsOnReturn = [
+      ...count(f.w2s.length, 'W-2'),
+      ...count(f.int1099s.length, '1099-INT'),
+      ...count(f.div1099s.length, '1099-DIV'),
+      ...count(f.nec1099s.length, '1099-NEC'),
+      ...count(f.misc1099s.length, '1099-MISC'),
+      ...count(f.k1099s.length, '1099-K'),
+      ...count(f.e1098s.length, '1098-E'),
+    ];
+    const dependents =
+      f.dependents.length === 0
+        ? 'no dependents'
+        : f.dependents.length === 1
+          ? 'one dependent'
+          : `${f.dependents.length} dependents`;
+    const net = result.summary.refundOrOwed;
     return {
       ready,
       blockers,
@@ -110,6 +151,12 @@ export const handler = defineTool(inputSchema, async (input, deps) => {
           ? STATUS_LABEL[result.filingStatus]
           : undefined,
         summary: result.summary,
+        outcome:
+          net > 0
+            ? { kind: 'refund', amount: net }
+            : net < 0
+              ? { kind: 'amount_owed', amount: -net }
+              : { kind: 'even', amount: 0 },
         forms: result.forms,
         drivers: drivers(result),
         documentsUsed: used.map((d) => d.file),
@@ -117,8 +164,8 @@ export const handler = defineTool(inputSchema, async (input, deps) => {
         priorYear: data.priorYear,
       },
       confirmWithUser: [
-        `Every W-2, 1099 and 1098 you received for ${result.taxYear} is one of these: ${used.map((d) => d.file).join(', ') || '(none)'}.`,
-        `Your filing status is ${result.filingStatus ? STATUS_LABEL[result.filingStatus] : '(not set)'} and you claim ${data.facts.dependents.length} dependent(s).`,
+        `The return includes ${formsOnReturn.join(', ') || 'no W-2s or 1099s'}${used.length ? ` (from ${used.map((d) => d.file).join(', ')})` : ''}. That is every tax form you received for ${result.taxYear}.`,
+        `Your filing status is ${result.filingStatus ? STATUS_LABEL[result.filingStatus] : '(not set)'}, with ${dependents}.`,
         'Your name(s) and home address are spelled the way they should print.',
         'Nothing in your tax year is missing: other income, a move, a marriage, a new child, or money you paid toward this year’s tax.',
       ],

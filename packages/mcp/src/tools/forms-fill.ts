@@ -1,12 +1,15 @@
 import { writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { factsHash } from '../calc.ts';
 import { defineTool, ToolError } from '../envelope.ts';
 import { requireAcknowledgment } from '../output/acknowledgment.ts';
 import { hasForms } from '../output/field-maps.ts';
 import { fillReturn } from '../output/fill.ts';
 import { assertNoVaultValues } from '../output/guard.ts';
-import { missingIdentity, readyResult } from '../output/ready.ts';
+import {
+  missingIdentity,
+  readyResult,
+  requireReview,
+} from '../output/ready.ts';
 import { summaryMarkdown } from '../output/summary.ts';
 import { openStore, outputsPath } from '../store/workspace.ts';
 import { workspaceSchema, type ToolDefinition } from './common.ts';
@@ -31,14 +34,7 @@ export const handler = defineTool(inputSchema, async (input, deps) => {
       `The forms print these, and only the user can give them: ${missing.join(', ')}. Ask for them and record them with profile_set (never SSNs), then call forms_fill again.`
     );
   }
-  if (data.review?.factsHash !== factsHash(data.facts)) {
-    throw new ToolError(
-      'REVIEW_REQUIRED',
-      data.review
-        ? 'The facts changed since the last return_review. Run return_review again and go through it with the user.'
-        : 'Run return_review first and go through it with the user.'
-    );
-  }
+  requireReview(data);
 
   const filled = await fillReturn(data, result);
   const dir = outputsPath(store.workspace);
@@ -54,7 +50,7 @@ export const handler = defineTool(inputSchema, async (input, deps) => {
     handwrite: filled.handwrite,
     unmappedLines: filled.unmapped,
     acknowledgedAt: ack.at,
-    reviewedAt: data.review.at,
+    reviewedAt: data.review!.at,
     note: 'Every SSN box and the direct-deposit boxes are blank: the user writes them in by hand (see handwrite). The PDF holds no SSNs and is not encrypted.',
   };
 });

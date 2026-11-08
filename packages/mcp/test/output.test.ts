@@ -401,6 +401,7 @@ test('forms_fill needs the start agreement and a review of the current facts', a
 
 test('entry sheet lists every non-zero line', async () => {
   const deps = await calc();
+  await markReviewed();
   const r = await filingPrepare(
     { workspace: ws, path: 'fillable_forms' },
     deps
@@ -432,6 +433,7 @@ test('mailing address by state', async () => {
       engine: engine({ summary: { ...emptySummary(), refundOrOwed: 1200 } }),
     })
   );
+  await markReviewed();
   let r = await filingPrepare({ workspace: ws, path: 'mail' }, deps);
   assert.ok(r.ok, JSON.stringify(r));
   let md = await readFile(
@@ -444,6 +446,7 @@ test('mailing address by state', async () => {
 
   // owed in Texas → both addresses
   deps = await calc();
+  await markReviewed();
   r = await filingPrepare({ workspace: ws, path: 'mail' }, deps);
   md = await readFile(
     join(ws, 'outputs', '2025-mailing-instructions.md'),
@@ -466,6 +469,7 @@ test('mailing address by state', async () => {
       engine: engine({ summary: { ...emptySummary(), refundOrOwed: 5 } }),
     })
   );
+  await markReviewed();
   await filingPrepare({ workspace: ws, path: 'mail' }, deps);
   md = await readFile(
     join(ws, 'outputs', '2025-mailing-instructions.md'),
@@ -512,6 +516,7 @@ test('a business name containing a vault value is refused, not written', async (
     d.identity.taxpayer!.firstName = `Pat ${FAKE.ssn}`;
   });
   const deps = await calc();
+  await markReviewed();
   const r = await filingPrepare(
     { workspace: ws, path: 'fillable_forms' },
     deps

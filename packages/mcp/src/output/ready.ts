@@ -58,3 +58,14 @@ export function missingIdentity(data: StoreData): string[] {
   need('address.zip', id.address?.zip);
   return out;
 }
+
+/** Refuse (REVIEW_REQUIRED) unless return_review was ready for the current facts. */
+export function requireReview(data: StoreData): void {
+  if (data.review?.factsHash === factsHash(data.facts)) return;
+  throw new ToolError(
+    'REVIEW_REQUIRED',
+    data.review
+      ? 'The facts changed since the last return_review. Run return_review again and go through it with the user.'
+      : 'Run return_review first and go through it with the user.'
+  );
+}

@@ -99,6 +99,7 @@ const PAGE = `<!doctype html>
   .check input { width: 18px; height: 18px; margin: 1px 0 0; flex: none; accent-color: var(--accent); max-width: none; padding: 0; }
   .check.none { border-top: 1px solid var(--line); margin-top: 4px; padding-top: 10px; border-radius: 0 0 8px 8px; }
   .other-text { margin: 2px 0 4px 36px; max-width: calc(100% - 44px); width: 320px; }
+  .other-hint { margin: 0 0 4px 36px; }
   .q.saved .check { pointer-events: none; }
 </style>
 </head>
@@ -167,8 +168,10 @@ function multiselect(q, a) {
     return i;
   };
   const otherInput = el('input', { type: 'text', class: 'other-text', placeholder: 'What was it?', 'aria-label': 'Describe the other situation', hidden: '' });
+  const otherHint = el('p', { class: 'err other-hint', hidden: '' }, 'Describe it in a few words, or untick “Something else”.');
   const update = () => {
     const other = otherOn ? otherText.trim() : '';
+    otherHint.hidden = !(otherOn && !other);
     if (otherOn && !other) { answers.delete(q.path); refreshBar(); return; }
     if (!none && picked.size === 0 && !other) { answers.delete(q.path); refreshBar(); return; }
     const sets = a.options.map((o) => ({ path: o.path, value: picked.has(o.path) }));
@@ -191,7 +194,7 @@ function multiselect(q, a) {
       update();
     });
     otherInput.addEventListener('input', () => { otherText = otherInput.value; update(); });
-    box.append(otherInput);
+    box.append(otherInput, otherHint);
   }
   noneBox = row(a.noneLabel, 'none', (on) => {
     none = on;
@@ -261,16 +264,17 @@ function render(result) {
     return;
   }
   const more = data.remaining - questions.length;
-  const step = data.phase === 'deductions' ? 'Part 2 of 2' : 'Part 1 of 2';
+  const step = data.phase === 'deductions' ? 'Part 2' : 'Part 1';
   root.append(el('div', { class: 'phase' },
     el('span', { class: 'step' }, step),
     el('h1', {}, data.phaseTitle || 'A few questions for your return'),
     ...(data.phaseIntro ? [el('p', {}, data.phaseIntro)] : [])));
   if (more > 0) root.append(el('div', { class: 'head' }, el('span', {}, questions.length + ' shown, ' + more + ' more after these')));
   for (const q of questions) {
-    const card = el('section', { class: 'q', 'aria-label': q.question },
+    const whyId = 'why-' + Math.random().toString(36).slice(2);
+    const card = el('section', { class: 'q', 'aria-label': q.question, ...(q.why ? { 'aria-describedby': whyId } : {}) },
       el('p', {}, q.question),
-      ...(q.why ? [el('p', { class: 'why' }, q.why)] : []),
+      ...(q.why ? [el('p', { class: 'why', id: whyId }, q.why)] : []),
       control(q),
       el('p', { class: 'err', hidden: '' }));
     card.dataset.path = q.path;
@@ -339,8 +343,11 @@ async function save() {
   statusEl.textContent = saved.length ? 'Saved ' + saved.length + '.' : '';
   refreshBar();
   if (!saved.length) return;
+  const open = [...root.querySelectorAll('section.q')].filter((c) => !c.classList.contains('saved')).length;
   const text = 'I answered in the 1040kit card (saved with profile_set):\\n' + lines.join('\\n') +
-    (rejected.size ? '\\nSome answers were not accepted; I will fix them in the card.' : '\\nPlease continue.');
+    (rejected.size ? '\\nSome answers were not accepted; I will fix them in the card.'
+      : open ? '\\n' + open + (open === 1 ? ' question in the card is' : ' questions in the card are') + ' still unanswered; I will answer them there.'
+      : '\\nPlease continue.');
   const caps = app.getHostCapabilities() || {};
   try {
     if (caps.message) await app.sendMessage({ role: 'user', content: [{ type: 'text', text }] });

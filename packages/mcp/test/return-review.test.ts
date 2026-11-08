@@ -3,7 +3,7 @@
  * facts entered through the tools.
  */
 import assert from 'node:assert/strict';
-import { writeFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { afterEach, beforeEach, test } from 'node:test';
 
@@ -11,7 +11,9 @@ import { defaultDeps } from '../src/deps.ts';
 import { openStore } from '../src/store/workspace.ts';
 import { handler as calcReturn } from '../src/tools/calc-return.ts';
 import { handler as docsScan } from '../src/tools/docs-scan.ts';
+import { handler as filingPrepare } from '../src/tools/filing-prepare.ts';
 import { handler as formsFill } from '../src/tools/forms-fill.ts';
+import { handler as interviewNext } from '../src/tools/interview-next.ts';
 import { handler as profileSet } from '../src/tools/profile-set.ts';
 import { handler as returnReview } from '../src/tools/return-review.ts';
 import { handler as workspaceInit } from '../src/tools/workspace-init.ts';
@@ -30,6 +32,7 @@ const deps = () => ({
 });
 
 const NONE_APPLY = [
+  'screening.hasDependents',
   'screening.hasRentalOrRoyaltyIncome',
   'screening.paidStudentLoanInterest',
   'outOfScope.retirementDistributions',
@@ -150,4 +153,55 @@ test('return_review needs the start agreement', async () => {
   });
   const r = await returnReview({ workspace: ws }, deps());
   assert.equal(!r.ok && r.error.code, 'ACK_REQUIRED');
+});
+
+test('filing_prepare needs the review; the entry sheet matches the return', async () => {
+  await set(identity);
+  assert.ok((await calcReturn({ workspace: ws }, deps())).ok);
+  const early = await filingPrepare(
+    { workspace: ws, path: 'fillable_forms' },
+    deps()
+  );
+  assert.equal(!early.ok && early.error.code, 'REVIEW_REQUIRED');
+
+  assert.ok((await returnReview({ workspace: ws }, deps())).ok);
+  const r = await filingPrepare(
+    { workspace: ws, path: 'fillable_forms' },
+    deps()
+  );
+  assert.ok(r.ok, JSON.stringify(r));
+  const md = await readFile(
+    join(ws, 'outputs', '2025-free-file-fillable-forms.md'),
+    'utf8'
+  );
+  // A W-2-only return: no Schedule 1-A, 8959 or 8960 lines.
+  assert.doesNotMatch(md, /Schedule 1-A|Form 8959|Form 8960/);
+  assert.match(md, /- Filing status: check \*\*Single\*\*/);
+  assert.match(md, /- Digital assets question: check \*\*No\*\*/);
+  assert.match(md, /\| Form 1040 \| 1a \| .* \| 90,000 \|/);
+});
+
+test('removing an answer asks it again', async () => {
+  await set([{ path: 'filingStatus', value: null }]);
+  const next = await interviewNext({ workspace: ws, limit: 20 }, deps());
+  assert.ok(next.ok);
+  assert.ok(
+    next.questions.some((q) => q.path === 'filingStatus'),
+    JSON.stringify(next.questions.map((q) => q.path))
+  );
+});
+
+test('a review lists open deductions once, not one item each', async () => {
+  await set(identity);
+  const r = await returnReview({ workspace: ws }, deps());
+  assert.ok(r.ok && r.ready);
+  const deductionItems = r.attention.filter((a) =>
+    a.code.startsWith('deduction')
+  );
+  assert.ok(deductionItems.length <= 1, JSON.stringify(r.attention));
+  assert.match(r.confirmWithUser[0]!, /1 W-2/);
+  assert.match(r.confirmWithUser[1]!, /Single, with no dependents/);
+  // $11,000 withheld on $90,000 of wages: a balance due, shown as a positive amount.
+  assert.equal(r.return.outcome.kind, 'amount_owed');
+  assert.equal(r.return.outcome.amount, -r.return.summary.refundOrOwed);
 });

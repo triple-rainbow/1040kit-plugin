@@ -47,7 +47,7 @@ export const handler = defineTool(inputSchema, async (input, deps) => {
       : {
           agreed: false,
           text: ACKNOWLEDGMENT_TEXT,
-          ask: 'Show this to the user word for word, once, before anything else, and ask whether they agree. If they do, call workspace_init again with acknowledged: true. The other tools refuse (ACK_REQUIRED) until then.',
+          ask: 'Show this to the user word for word, once, before anything else, and ask whether they agree. If they do, call workspace_init again with acknowledged: true. Reading documents, the interview, the review, the forms and the filing package refuse (ACK_REQUIRED) until then.',
         },
   };
 });

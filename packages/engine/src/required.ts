@@ -27,6 +27,7 @@ import type {
 type ScreeningKey =
   | keyof OutOfScopeFlags
   | 'digitalAssetActivity'
+  | 'screening.hasDependents'
   | 'screening.hasRentalOrRoyaltyIncome'
   | 'screening.paidStudentLoanInterest';
 
@@ -35,6 +36,12 @@ const SCREENING: {
   question: string;
   why: string;
 }[] = [
+  {
+    key: 'screening.hasDependents',
+    question:
+      'Does anyone, such as a child or a relative, live with you or depend on you for support?',
+    why: 'Dependents can mean the child tax credit, the credit for other dependents, head of household and a larger earned income credit.',
+  },
   {
     key: 'retirementDistributions',
     question:
@@ -203,6 +210,18 @@ export function requiredFactsFrom(
       question:
         'Who is the qualifying person (a child or relative) who lived with you for more than half the year?',
       why: 'Head of household requires a qualifying person.',
+      blocking: true,
+      priority: 19,
+    });
+  } else if (
+    facts.screening?.hasDependents === true &&
+    facts.dependents.length === 0
+  ) {
+    add({
+      path: 'dependents',
+      question:
+        'Who lives with you or depends on you? For each person: how they are related to you and their date of birth.',
+      why: 'Each dependent can bring a credit; the relationship and age decide which one.',
       blocking: true,
       priority: 19,
     });
@@ -575,7 +594,10 @@ export function requiredFactsFrom(
       path = 'digitalAssetActivity';
     } else if (s.key.startsWith('screening.')) {
       const k = s.key.slice('screening.'.length) as keyof Screening;
-      answered = facts.screening?.[k] !== undefined;
+      answered =
+        facts.screening?.[k] !== undefined ||
+        // Dependents already on the return answer it.
+        (k === 'hasDependents' && facts.dependents.length > 0);
       path = s.key;
     } else {
       answered =

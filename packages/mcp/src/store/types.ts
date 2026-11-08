@@ -25,6 +25,8 @@ export interface ProvenanceEntry {
   at: string;
   /** Set when a user answer replaced a value read from a document. */
   overrides?: 'doc';
+  /** The value was removed (profile_set null): kept for the record, but not an answer. */
+  removed?: true;
 }
 
 export type DocKind =

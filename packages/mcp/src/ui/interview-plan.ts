@@ -27,7 +27,7 @@ export const PHASES: Record<Phase, { title: string; intro: string }> = {
   deductions: {
     title: 'Deductions and credits',
     intro:
-      'Your income is done. Now we work on lowering your taxable income and your tax: deductions and credits. This part has the most questions, and each one can reduce what you owe or raise your refund.',
+      'Your income is done. Now we work on lowering your taxable income and your tax: deductions and credits. These questions take a little patience, and each one can reduce what you owe or raise your refund.',
   },
 };
 
@@ -46,6 +46,10 @@ export function phaseOf(path: string): Phase {
 
 /** Situation screening: path → checkbox label. The order is the order shown. */
 export const SITUATIONS: { path: string; label: string }[] = [
+  {
+    path: 'screening.hasDependents',
+    label: 'A child or relative lives with you or depends on you',
+  },
   {
     path: 'screening.hasRentalOrRoyaltyIncome',
     label: 'Rent from a property, or royalties',
