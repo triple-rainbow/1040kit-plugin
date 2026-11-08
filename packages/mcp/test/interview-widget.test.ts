@@ -249,3 +249,36 @@ test('nothing reads or asks before the start agreement', async () => {
   assert.equal(again.acknowledgment.agreed, true);
   assert.equal(again.acknowledgment.at, agreed.acknowledgment.at);
 });
+
+test('dependent questions use the first name once it is known', async () => {
+  const init = await call('workspace_init', {
+    year: 2025,
+    path: `${env.home}/named-dependent`,
+    acknowledged: true,
+  });
+  const ws = init.workspace as string;
+  await call('profile_set', {
+    workspace: ws,
+    set: [
+      {
+        path: 'dependents[dependent_1].dateOfBirth',
+        value: '2019-06-01',
+        source: 'user',
+      },
+      {
+        path: 'identity.dependents[dependent_1].firstName',
+        value: 'Robin',
+        source: 'user',
+      },
+    ],
+  });
+  const next = await call('interview_next', { workspace: ws, limit: 20 });
+  const qs = (next.questions as { path: string; question: string }[]).filter(
+    (q) => q.path.startsWith('dependents[dependent_1]')
+  );
+  assert.ok(qs.length > 0, JSON.stringify(next.questions));
+  for (const q of qs) {
+    assert.ok(!q.question.includes('your dependent #1'), q.question);
+    assert.match(q.question, /Robin/);
+  }
+});

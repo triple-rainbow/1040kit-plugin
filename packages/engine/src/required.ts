@@ -208,7 +208,7 @@ export function requiredFactsFrom(
     add({
       path: 'dependents',
       question:
-        'Who is the qualifying person (a child or relative) who lived with you for more than half the year?',
+        'Who is the qualifying person (a child or relative) who lived with you for more than half the year? Their first and last name, how they are related to you, date of birth, months they lived with you, and whether they have a Social Security number valid for work.',
       why: 'Head of household requires a qualifying person.',
       blocking: true,
       priority: 19,
@@ -220,7 +220,7 @@ export function requiredFactsFrom(
     add({
       path: 'dependents',
       question:
-        'Who lives with you or depends on you? For each person: how they are related to you and their date of birth.',
+        'Who lives with you or depends on you? For each person: first and last name, how they are related to you, date of birth, months they lived with you, and whether they have a Social Security number valid for work.',
       why: 'Each dependent can bring a credit; the relationship and age decide which one.',
       blocking: true,
       priority: 19,
