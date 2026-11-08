@@ -81,7 +81,7 @@ function chipValues(a: AnswerSpec): unknown[] {
 }
 
 test('every chip value is accepted by profile_set', async () => {
-  const init = await call('workspace_init', { year: 2025 });
+  const init = await call('workspace_init', { year: 2025, acknowledged: true });
   const ws = init.workspace as string;
   await call('profile_set', {
     workspace: ws,
@@ -137,4 +137,115 @@ test('answer types come from the facts schema', () => {
   ]);
   assert.deepEqual(answerSpec('dependents'), { kind: 'open' });
   assert.deepEqual(answerSpec('no.such.path'), { kind: 'open' });
+});
+
+test('situations come as one check-all-that-apply question, first', async () => {
+  const init = await call('workspace_init', { year: 2025, acknowledged: true });
+  const ws = init.workspace as string;
+  const next = await call('interview_next', { workspace: ws, limit: 20 });
+  assert.equal(next.phase, 'income');
+  assert.equal(next.phaseTitle, 'You and your income');
+  const paths = (next.questions as { path: string }[]).map((q) => q.path);
+  assert.equal(paths[0], 'situations');
+  assert.ok(
+    !paths.some((p) =>
+      /^(outOfScope|screening)\.|^digitalAssetActivity$/.test(p)
+    ),
+    JSON.stringify(paths)
+  );
+  const q = next.questions[0];
+  assert.equal(q.answer.kind, 'multiselect');
+  assert.equal(q.answer.options.length, 13);
+  assert.equal(q.answer.other.path, 'outOfScope.other');
+
+  // What the card saves: the checked ones true, the rest false, other as a list.
+  const set = [
+    ...q.answer.options.map((o: { path: string }) => ({
+      path: o.path,
+      value: o.path === 'screening.paidStudentLoanInterest',
+      source: 'user',
+    })),
+    { path: 'outOfScope.other', value: [], source: 'user' },
+  ];
+  const r = await call('profile_set', { workspace: ws, set });
+  assert.equal(r.ok, true, JSON.stringify(r));
+  assert.deepEqual(r.rejected, []);
+  const after = await call('interview_next', { workspace: ws, limit: 20 });
+  assert.ok(
+    !after.questions.some((x: { path: string }) => x.path === 'situations')
+  );
+});
+
+test('deductions and credits come after income, with an intro', async () => {
+  const init = await call('workspace_init', {
+    year: 2025,
+    path: `${env.home}/low-income`,
+    acknowledged: true,
+  });
+  const ws = init.workspace as string;
+  const none = (
+    await call('interview_next', { workspace: ws, limit: 20 })
+  ).questions[0].answer.options.map((o: { path: string }) => ({
+    path: o.path,
+    value: false,
+    source: 'user',
+  }));
+  const r = await call('profile_set', {
+    workspace: ws,
+    set: [
+      ...none,
+      { path: 'outOfScope.other', value: [], source: 'user' },
+      { path: 'filingStatus', value: 'single', source: 'user' },
+      { path: 'taxpayer.dateOfBirth', value: '1994-05-01', source: 'user' },
+      {
+        path: 'taxpayer.canBeClaimedAsDependent',
+        value: false,
+        source: 'user',
+      },
+      { path: 'taxpayer.hasValidSsn', value: true, source: 'user' },
+      { path: 'w2s[w2_1].owner', value: 'taxpayer', source: 'user' },
+      { path: 'w2s[w2_1].wages', value: 1800000, source: 'user' },
+      { path: 'w2s[w2_1].federalWithheld', value: 90000, source: 'user' },
+    ],
+  });
+  assert.deepEqual(r.rejected, [], JSON.stringify(r.rejected));
+  const next = await call('interview_next', { workspace: ws, limit: 20 });
+  assert.equal(
+    next.phase,
+    'deductions',
+    JSON.stringify(next.questions.map((q: { path: string }) => q.path))
+  );
+  assert.equal(next.phaseTitle, 'Deductions and credits');
+  assert.match(next.phaseIntro, /lowering your taxable income/);
+  assert.ok(
+    next.questions.some(
+      (q: { path: string }) => q.path === 'eitc.priorDisallowance'
+    )
+  );
+  assert.equal(next.remainingAfterThisPhase, 0);
+});
+
+test('nothing reads or asks before the start agreement', async () => {
+  const init = await call('workspace_init', {
+    year: 2025,
+    path: `${env.home}/no-ack`,
+  });
+  assert.equal(init.acknowledgment.agreed, false);
+  assert.ok(init.acknowledgment.text.length > 0);
+  const next = await call('interview_next', { workspace: init.workspace });
+  assert.equal(next.ok, false);
+  assert.equal(next.error.code, 'ACK_REQUIRED');
+  const agreed = await call('workspace_init', {
+    year: 2025,
+    path: `${env.home}/no-ack`,
+    acknowledged: true,
+  });
+  assert.equal(agreed.acknowledgment.agreed, true);
+  // Asking again later doesn't re-prompt.
+  const again = await call('workspace_init', {
+    year: 2025,
+    path: `${env.home}/no-ack`,
+  });
+  assert.equal(again.acknowledgment.agreed, true);
+  assert.equal(again.acknowledgment.at, agreed.acknowledgment.at);
 });

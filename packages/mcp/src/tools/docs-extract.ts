@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { extractDocs } from '../docs/extract.ts';
 import { readDocTextWithOcr } from '../docs/ocr.ts';
 import { defineTool } from '../envelope.ts';
+import { requireAcknowledgment } from '../output/acknowledgment.ts';
 import { openStore } from '../store/workspace.ts';
 import { workspaceSchema, type ToolDefinition } from './common.ts';
 
@@ -18,6 +19,7 @@ export const inputSchema = {
 
 export const handler = defineTool(inputSchema, async (input, deps) => {
   const store = await openStore(input.workspace);
+  requireAcknowledgment(await store.read());
   const at = deps.now().toISOString();
   return store.write((data) =>
     extractDocs(store.workspace, data, input.docIds, at, readDocTextWithOcr)

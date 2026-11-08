@@ -25,6 +25,7 @@ import { openStore } from '../src/store/workspace.ts';
 import { handler as calcReturn } from '../src/tools/calc-return.ts';
 import { handler as filingPrepare } from '../src/tools/filing-prepare.ts';
 import { handler as formsFill } from '../src/tools/forms-fill.ts';
+import { handler as returnReview } from '../src/tools/return-review.ts';
 import { handler as profileSet } from '../src/tools/profile-set.ts';
 import { handler as workspaceInit } from '../src/tools/workspace-init.ts';
 import {
@@ -137,7 +138,7 @@ const deps = () => fakeDeps({ engine });
 
 beforeEach(async () => {
   env = await freshEnv();
-  const r = await workspaceInit({ year: 2025 }, fakeDeps());
+  const r = await workspaceInit({ year: 2025, acknowledged: true }, fakeDeps());
   assert.ok(r.ok);
   ws = r.workspace;
   const set = await profileSet(
@@ -452,7 +453,9 @@ test('SSN boxes stay blank on every new form; handwrite says where', async () =>
 test('entry sheet and mailing instructions cover the new forms', async () => {
   const d = deps();
   assert.ok((await calcReturn({ workspace: ws }, d)).ok);
-  const fill = await formsFill({ workspace: ws, acknowledged: true }, d);
+  const review = await returnReview({ workspace: ws }, d);
+  assert.ok(review.ok && review.ready, JSON.stringify(review));
+  const fill = await formsFill({ workspace: ws }, d);
   assert.ok(fill.ok, JSON.stringify(fill));
   assert.deepEqual(fill.unmappedLines, []);
   for (const path of ['fillable_forms', 'mail'] as const)

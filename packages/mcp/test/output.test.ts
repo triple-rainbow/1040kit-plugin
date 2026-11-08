@@ -6,6 +6,7 @@ import type { FormId, LineNode, ReturnResult, TaxFacts } from '@1040kit/engine';
 import { PDFDocument } from 'pdf-lib';
 import { extractText, getDocumentProxy } from 'unpdf';
 
+import { factsHash } from '../src/calc.ts';
 import { ACKNOWLEDGMENT_TEXT } from '../src/output/acknowledgment.ts';
 import { fillReturn, validateMaps } from '../src/output/fill.ts';
 import { openStore } from '../src/store/workspace.ts';
@@ -28,7 +29,18 @@ let env: TestEnv;
 let ws: string;
 
 const ACCT = '0000987654321';
-const ack = { acknowledged: true } as const;
+/** What return_review records when nothing blocks (the review tool has its own tests). */
+async function markReviewed() {
+  await (
+    await openStore(ws)
+  ).write((d) => {
+    d.review = {
+      at: '2026-02-01T12:00:00.000Z',
+      factsHash: factsHash(d.facts),
+    };
+    return d;
+  });
+}
 
 function lines(): [FormId, string, string, number][] {
   return [
@@ -95,7 +107,7 @@ const engine = (over: Partial<ReturnResult> = {}) =>
 
 beforeEach(async () => {
   env = await freshEnv();
-  const r = await workspaceInit({ year: 2025 }, fakeDeps());
+  const r = await workspaceInit({ year: 2025, acknowledged: true }, fakeDeps());
   assert.ok(r.ok);
   ws = r.workspace;
   await (
@@ -158,7 +170,7 @@ test('every field map entry resolves in the 2025 PDFs', async () => {
 });
 
 test('forms_fill refuses incomplete return', async () => {
-  const none = await formsFill({ workspace: ws, ...ack }, fakeDeps());
+  const none = await formsFill({ workspace: ws }, fakeDeps());
   assert.equal(!none.ok && none.error.code, 'RETURN_INCOMPLETE');
 
   const deps = await calc(
@@ -175,7 +187,7 @@ test('forms_fill refuses incomplete return', async () => {
       }),
     })
   );
-  const r = await formsFill({ workspace: ws, ...ack }, deps);
+  const r = await formsFill({ workspace: ws }, deps);
   assert.equal(!r.ok && r.error.code, 'RETURN_INCOMPLETE');
   assert.match(!r.ok ? r.error.message : '', /Net investment income/);
   const f = await filingPrepare({ workspace: ws, path: 'mail' }, deps);
@@ -190,7 +202,7 @@ test('forms_fill refuses incomplete return', async () => {
     },
     ok
   );
-  const stale = await formsFill({ workspace: ws, ...ack }, ok);
+  const stale = await formsFill({ workspace: ws }, ok);
   assert.equal(!stale.ok && stale.error.code, 'RETURN_INCOMPLETE');
   assert.match(!stale.ok ? stale.error.message : '', /changed/);
 });
@@ -261,7 +273,7 @@ test('filled 1040 has wages in line 1a field', async () => {
 
 test('no SSN anywhere in the PDF; handwrite names every SSN box', async () => {
   const deps = await calc();
-  const r = await formsFill({ workspace: ws, ...ack }, deps);
+  const r = (await markReviewed(), await formsFill({ workspace: ws }, deps));
   assert.ok(r.ok, JSON.stringify(r));
   const text = JSON.stringify(r);
   assert.ok(!text.includes('6789') && !text.includes('123456789'), text);
@@ -327,7 +339,7 @@ test('a refund adds the direct-deposit boxes to handwrite', async () => {
       engine: engine({ summary: { ...emptySummary(), refundOrOwed: 1200 } }),
     })
   );
-  const r = await formsFill({ workspace: ws, ...ack }, deps);
+  const r = (await markReviewed(), await formsFill({ workspace: ws }, deps));
   assert.ok(r.ok, JSON.stringify(r));
   assert.ok(
     r.handwrite.some((h) =>
@@ -339,37 +351,27 @@ test('a refund adds the direct-deposit boxes to handwrite', async () => {
   );
 });
 
-test('forms_fill needs the acknowledgment, and again after a fact change', async () => {
+test('forms_fill needs the start agreement and a review of the current facts', async () => {
   const deps = await calc();
+  // No review yet.
   const first = await formsFill({ workspace: ws }, deps);
-  assert.equal(!first.ok && first.error.code, 'ACK_REQUIRED');
-  assert.ok(
-    !first.ok && first.error.message.includes(ACKNOWLEDGMENT_TEXT),
-    'the message carries the exact text'
-  );
-  const no = await formsFill({ workspace: ws, acknowledged: false }, deps);
-  assert.equal(!no.ok && no.error.code, 'ACK_REQUIRED');
+  assert.equal(!first.ok && first.error.code, 'REVIEW_REQUIRED');
   assert.deepEqual(await readdir(join(ws, 'outputs')), []);
 
-  const yes = await formsFill({ workspace: ws, ...ack }, deps);
+  await markReviewed();
+  const yes = await formsFill({ workspace: ws }, deps);
   assert.ok(yes.ok, JSON.stringify(yes));
   assert.equal(yes.acknowledgedAt, '2026-02-01T12:00:00.000Z');
-  let data = await (await openStore(ws)).read();
-  assert.equal(data.acknowledgment?.text, ACKNOWLEDGMENT_TEXT);
-  assert.equal(data.acknowledgment?.at, '2026-02-01T12:00:00.000Z');
-  assert.equal(data.acknowledgment?.factsHash, data.lastCalc?.factsHash);
+  assert.equal(yes.reviewedAt, '2026-02-01T12:00:00.000Z');
   const summary = await readFile(
     join(ws, 'outputs', '2025-summary.md'),
     'utf8'
   );
   assert.ok(summary.includes(ACKNOWLEDGMENT_TEXT));
-  assert.match(summary, /On 2026-02-01 .*you acknowledged/);
+  assert.match(summary, /On 2026-02-01 .*you agreed/);
+  assert.match(summary, /You reviewed this return with return_review/);
 
-  // same facts: no need to acknowledge again
-  const again = await formsFill({ workspace: ws }, deps);
-  assert.ok(again.ok, JSON.stringify(again));
-
-  // a fact changes → recompute → acknowledgment needed again
+  // A fact change needs a new review, not a new agreement.
   const set = await profileSet(
     {
       workspace: ws,
@@ -380,11 +382,21 @@ test('forms_fill needs the acknowledgment, and again after a fact change', async
   assert.ok(set.ok);
   await calc(deps);
   const stale = await formsFill({ workspace: ws }, deps);
-  assert.equal(!stale.ok && stale.error.code, 'ACK_REQUIRED');
-  const re = await formsFill({ workspace: ws, ...ack }, deps);
-  assert.ok(re.ok, JSON.stringify(re));
-  data = await (await openStore(ws)).read();
-  assert.equal(data.acknowledgment?.factsHash, data.lastCalc?.factsHash);
+  assert.equal(!stale.ok && stale.error.code, 'REVIEW_REQUIRED');
+  assert.match(!stale.ok ? stale.error.message : '', /changed/);
+  await markReviewed();
+  assert.ok((await formsFill({ workspace: ws }, deps)).ok);
+
+  // Without the start agreement, nothing is filled.
+  await (
+    await openStore(ws)
+  ).write((d) => {
+    delete d.acknowledgment;
+    return d;
+  });
+  const noAck = await formsFill({ workspace: ws }, deps);
+  assert.equal(!noAck.ok && noAck.error.code, 'ACK_REQUIRED');
+  assert.ok(!noAck.ok && noAck.error.message.includes(ACKNOWLEDGMENT_TEXT));
 });
 
 test('entry sheet lists every non-zero line', async () => {
@@ -464,7 +476,9 @@ test('mailing address by state', async () => {
 
 test('no raw SSN, EIN or account number in any text file', async () => {
   const deps = await calc();
-  assert.ok((await formsFill({ workspace: ws, ...ack }, deps)).ok);
+  assert.ok(
+    (await markReviewed(), await formsFill({ workspace: ws }, deps)).ok
+  );
   assert.ok((await filingPrepare({ workspace: ws, path: 'mail' }, deps)).ok);
   assert.ok(
     (await filingPrepare({ workspace: ws, path: 'fillable_forms' }, deps)).ok

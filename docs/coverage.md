@@ -87,12 +87,13 @@ Last updated: 2026-11-06 (every printed total and copy line fills; head of house
 
 ## Identifiers (SSNs, ITINs, bank accounts)
 
-| Item                                                                                                                    | Status                                                                                                                                                | Since |
-| ----------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
-| SSNs and ITINs (taxpayer, spouse, dependents, Schedule EIC)                                                             | **never stored**. Extraction discards them; the PDF leaves them blank and the handwrite list names every box; the entry sheet says "type it yourself" | v1    |
-| Refund direct deposit routing/account numbers                                                                           | never stored; written in by the user                                                                                                                  | v1    |
-| Employer/payer EINs                                                                                                     | read from documents, kept as tokens toward the AI, printed by `forms_fill`                                                                            | v1    |
-| Sign-off acknowledgment (user entered identifiers, reviewed every number, 1040kit takes no responsibility for accuracy) | required by `forms_fill`                                                                                                                              | v1    |
+| Item                                                                                                                  | Status                                                                                                                                                | Since |
+| --------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
+| SSNs and ITINs (taxpayer, spouse, dependents, Schedule EIC)                                                           | **never stored**. Extraction discards them; the PDF leaves them blank and the handwrite list names every box; the entry sheet says "type it yourself" | v1    |
+| Refund direct deposit routing/account numbers                                                                         | never stored; written in by the user                                                                                                                  | v1    |
+| Employer/payer EINs                                                                                                   | read from documents, kept as tokens toward the AI, printed by `forms_fill`                                                                            | v1    |
+| Start agreement (1040kit is software, not tax advice; the user reviews, writes in SSNs and signs), once per workspace | required by `docs_extract`, `interview_next`, `return_review` and `forms_fill`; given with `workspace_init`                                           | v1    |
+| Holistic review before the forms (`return_review`: blockers, attention items, summary, questions to confirm)          | required by `forms_fill` for the current facts                                                                                                        | v1    |
 
 ## Outputs and filing
 

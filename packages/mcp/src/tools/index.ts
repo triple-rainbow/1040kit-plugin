@@ -12,6 +12,7 @@ import { definition as interviewNext } from './interview-next.ts';
 import { definition as kbSearch } from './kb-search.ts';
 import { definition as profileGet } from './profile-get.ts';
 import { definition as profileSet } from './profile-set.ts';
+import { definition as returnReview } from './return-review.ts';
 import { definition as reviewChecks } from './review-checks.ts';
 import { definition as scenarioCompare } from './scenario-compare.ts';
 import { definition as workspaceInit } from './workspace-init.ts';
@@ -27,6 +28,7 @@ const implemented: ToolDefinition[] = [
   explainLine,
   deductionsFind,
   reviewChecks,
+  returnReview,
   scenarioCompare,
   expensesImport,
   kbSearch,

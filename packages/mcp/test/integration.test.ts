@@ -44,7 +44,7 @@ test(
         throw new Error('no network');
       }) as typeof fetch,
     };
-    const ws = await workspaceInit({ year: 2025 }, deps);
+    const ws = await workspaceInit({ year: 2025, acknowledged: true }, deps);
     assert.ok(ws.ok);
     await writeFile(join(ws.inbox, 'w2.pdf'), await w2Pdf());
     assert.ok((await docsScan({ workspace: ws.workspace }, deps)).ok);

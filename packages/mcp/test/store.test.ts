@@ -17,7 +17,10 @@ afterEach(async () => {
 });
 
 async function init() {
-  const res = await workspaceInit({ year: 2025 }, fakeDeps());
+  const res = await workspaceInit(
+    { year: 2025, acknowledged: true },
+    fakeDeps()
+  );
   assert.equal(res.ok, true, JSON.stringify(res));
   return res as Extract<typeof res, { ok: true }>;
 }
@@ -64,7 +67,10 @@ test('init refuses an existing non-empty non-1040kit dir', async () => {
   const dir = join(env.home, 'other');
   await mkdir(dir, { recursive: true });
   await writeFile(join(dir, 'notes.txt'), 'hello');
-  const res = await workspaceInit({ year: 2025, path: dir }, fakeDeps());
+  const res = await workspaceInit(
+    { year: 2025, path: dir, acknowledged: true },
+    fakeDeps()
+  );
   assert.equal(res.ok, false);
   assert.equal(!res.ok && res.error.code, 'WORKSPACE_CONFLICT');
 });
@@ -105,7 +111,10 @@ test('refuses to overwrite unreadable store', async () => {
   );
   assert.deepEqual(await readFile(encPath), before);
   // init must not "repair" it either
-  const res = await workspaceInit({ year: 2025 }, fakeDeps());
+  const res = await workspaceInit(
+    { year: 2025, acknowledged: true },
+    fakeDeps()
+  );
   assert.deepEqual(await readFile(encPath), before);
   assert.equal(res.ok, false);
 });

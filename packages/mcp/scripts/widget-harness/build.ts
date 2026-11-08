@@ -25,7 +25,7 @@ const { interviewWidgetHtml } =
 
 const deps = defaultDeps();
 const ws = join(scratch, '2025');
-const r = await init({ year: 2025, path: ws }, deps);
+const r = await init({ year: 2025, path: ws, acknowledged: true }, deps);
 if (!r.ok) throw new Error(JSON.stringify(r));
 await setFacts(
   {

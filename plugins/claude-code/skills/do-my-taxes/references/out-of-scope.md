@@ -4,9 +4,9 @@
 
 Federal Form 1040 only, for filing statuses Single, Married Filing Jointly and Head of Household, with the standard deduction. Income from W-2s (any number), 1099-INT, 1099-DIV, 1099-NEC, 1099-MISC (boxes 1–3) and 1099-K. One self-employment business (Schedule C) per person, with the simplified or actual-expense home office (Form 8829, including depreciation for homeowners). Rents and royalties on Schedule E for up to 3 properties, when no depreciation is involved (for example, a rented room or apartment the user doesn't own, or royalties). Deductions and credits: the new 2025 deductions for tips, overtime, car loan interest and seniors (Schedule 1-A), student loan interest (1098-E), Child Tax Credit and Credit for Other Dependents, the Earned Income Credit (Schedule EIC), the qualified business income deduction (Form 8995), half of self-employment tax, self-employed health insurance and SEP-IRA contributions. Taxes: Additional Medicare Tax (Form 8959) and Net Investment Income Tax (Form 8960).
 
-## Screening questions (playbook step 4)
+## Situations checklist (playbook step 5)
 
-Ask these in one friendly message, in plain words, after `docs_scan`. Record each answer with `profile_set` (`source: 'user'`) at the path shown, `true` for yes and `false` for no. The two `screening.*` questions are topics 1040kit handles: a yes just means `interview_next` will ask about them.
+`interview_next` asks these as one "check all that apply" question (`path: 'situations'`, `answer.kind: 'multiselect'`), first in the income phase. The 1040kit card shows check boxes and saves them; without the card, show the list once and ask which apply. Either way every option is recorded with `profile_set` (`source: 'user'`): `true` for the ones that apply, `false` for the rest, and `outOfScope.other` as a list of short descriptions (`[]` if none). The two `screening.*` items and digital assets are topics 1040kit handles (rentals, student loan interest, the Form 1040 digital-asset question): a check just means more questions later. A check on any `outOfScope.*` item means 1040kit can't finish the return (below).
 
 | Ask about the tax year: did you (or your spouse)…                    | Path                                  |
 | -------------------------------------------------------------------- | ------------------------------------- |
@@ -23,13 +23,13 @@ Ask these in one friendly message, in plain words, after `docs_scan`. Record eac
 | want to itemize deductions instead of taking the standard deduction? | `outOfScope.wantsToItemize`           |
 | (married) plan to file separately from your spouse?                  | `outOfScope.marriedFilingSeparately`  |
 
-Also ask whether they owned, received, sold or exchanged any digital assets (crypto) and record `digitalAssetActivity`.
+The checklist also covers digital assets (`digitalAssetActivity`).
 
 If they mention something else not covered above (for example a 1099-C, gambling winnings, alimony, a household employee), record it in `outOfScope.other` as a short plain description and treat it as unsupported.
 
 ## When something is out of scope
 
-Triggers: an `unsupported` item from `calc_return`, an `unsupported_form` document from `docs_scan`, or a yes to an `outOfScope.*` screening question.
+Triggers: an `unsupported` item from `calc_return`, an `unsupported_form` document from `docs_scan`, or a checked `outOfScope.*` situation.
 
 Say, in this order and in your own words:
 

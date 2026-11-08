@@ -1,6 +1,7 @@
 /**
  * MCP Apps widget for interview_next: the open questions as cards with
- * answer chips. "Save answers" records them with profile_set (the same
+ * answer chips, check boxes ("check all that apply") and text boxes, under
+ * the current phase's title and intro. "Save answers" records them with profile_set (the same
  * validation as the AI's own calls), then sends one chat message saying what
  * was saved so the assistant carries on. Hosts without MCP Apps ignore this
  * and the AI asks in text (the tool result is unchanged).
@@ -88,6 +89,17 @@ const PAGE = `<!doctype html>
   .q.saved .chip, .q.saved input { pointer-events: none; }
   .ok { color: var(--muted); font-size: 13px; }
   .done { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px; }
+  .phase { display: grid; gap: 2px; }
+  .phase .step { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+  .phase h1 { font-size: 16px; font-weight: 600; margin: 0; }
+  .phase p { margin: 0; color: var(--muted); font-size: 14px; }
+  .checks { display: grid; gap: 2px; }
+  .check { display: flex; align-items: flex-start; gap: 10px; padding: 7px 8px; border-radius: 8px; cursor: pointer; }
+  .check:hover { background: var(--bg); }
+  .check input { width: 18px; height: 18px; margin: 1px 0 0; flex: none; accent-color: var(--accent); max-width: none; padding: 0; }
+  .check.none { border-top: 1px solid var(--line); margin-top: 4px; padding-top: 10px; border-radius: 0 0 8px 8px; }
+  .other-text { margin: 2px 0 4px 36px; max-width: calc(100% - 44px); width: 320px; }
+  .q.saved .check { pointer-events: none; }
 </style>
 </head>
 <body>
@@ -100,7 +112,7 @@ const app = new App({ name: '1040kit interview', version: '0.1.0' }, {}, { autoR
 
 let workspace = null;
 let questions = [];
-const answers = new Map(); // path -> { value, label }
+const answers = new Map(); // question path -> { value, label } or { sets: [{ path, value }], label }
 
 const el = (tag, props = {}, ...kids) => {
   const n = document.createElement(tag);
@@ -140,9 +152,63 @@ function input(q, type, parse, show) {
   return i;
 }
 
+// "Check all that apply": every option is saved, true when checked and false
+// otherwise, so one card replaces a yes/no question per situation.
+function multiselect(q, a) {
+  const box = el('div', { class: 'checks', role: 'group', 'aria-label': q.question });
+  const picked = new Set();
+  let none = false, otherOn = false, otherText = '';
+  const boxes = [];
+  const row = (label, cls, onchange) => {
+    const i = el('input', { type: 'checkbox' });
+    i.addEventListener('change', () => onchange(i.checked));
+    const l = el('label', { class: 'check' + (cls ? ' ' + cls : '') }, i, el('span', {}, label));
+    box.append(l);
+    return i;
+  };
+  const otherInput = el('input', { type: 'text', class: 'other-text', placeholder: 'What was it?', 'aria-label': 'Describe the other situation', hidden: '' });
+  const update = () => {
+    const other = otherOn ? otherText.trim() : '';
+    if (otherOn && !other) { answers.delete(q.path); refreshBar(); return; }
+    if (!none && picked.size === 0 && !other) { answers.delete(q.path); refreshBar(); return; }
+    const sets = a.options.map((o) => ({ path: o.path, value: picked.has(o.path) }));
+    if (a.other) sets.push({ path: a.other.path, value: other ? [other] : [] });
+    const chosen = a.options.filter((o) => picked.has(o.path)).map((o) => o.label);
+    if (other) chosen.push('Something else: ' + other);
+    answers.set(q.path, { sets, label: chosen.length ? chosen.join('; ') : a.noneLabel });
+    refreshBar();
+  };
+  let noneBox;
+  const clearNone = () => { none = false; if (noneBox) noneBox.checked = false; };
+  for (const o of a.options) {
+    boxes.push(row(o.label, '', (on) => { if (on) { picked.add(o.path); clearNone(); } else picked.delete(o.path); update(); }));
+  }
+  let otherBox;
+  if (a.other) {
+    otherBox = row(a.other.label, '', (on) => {
+      otherOn = on; otherInput.hidden = !on;
+      if (on) { clearNone(); otherInput.focus(); }
+      update();
+    });
+    otherInput.addEventListener('input', () => { otherText = otherInput.value; update(); });
+    box.append(otherInput);
+  }
+  noneBox = row(a.noneLabel, 'none', (on) => {
+    none = on;
+    if (on) {
+      picked.clear(); otherOn = false; otherInput.hidden = true;
+      for (const b of boxes) b.checked = false;
+      if (otherBox) otherBox.checked = false;
+    }
+    update();
+  });
+  return box;
+}
+
 function control(q) {
   const a = q.answer || { kind: 'open' };
   switch (a.kind) {
+    case 'multiselect': return multiselect(q, a);
     case 'yesno': return chips(q, [{ value: true, label: 'Yes' }, { value: false, label: 'No' }]);
     case 'choice': return chips(q, a.options);
     case 'number':
@@ -195,9 +261,12 @@ function render(result) {
     return;
   }
   const more = data.remaining - questions.length;
-  root.append(el('div', { class: 'head' },
-    el('h1', {}, 'A few questions for your return'),
-    el('span', {}, more > 0 ? questions.length + ' shown, ' + more + ' more after these' : '')));
+  const step = data.phase === 'deductions' ? 'Part 2 of 2' : 'Part 1 of 2';
+  root.append(el('div', { class: 'phase' },
+    el('span', { class: 'step' }, step),
+    el('h1', {}, data.phaseTitle || 'A few questions for your return'),
+    ...(data.phaseIntro ? [el('p', {}, data.phaseIntro)] : [])));
+  if (more > 0) root.append(el('div', { class: 'head' }, el('span', {}, questions.length + ' shown, ' + more + ' more after these')));
   for (const q of questions) {
     const card = el('section', { class: 'q', 'aria-label': q.question },
       el('p', {}, q.question),
@@ -205,6 +274,8 @@ function render(result) {
       control(q),
       el('p', { class: 'err', hidden: '' }));
     card.dataset.path = q.path;
+    if (q.answer && q.answer.kind === 'multiselect')
+      card.dataset.paths = JSON.stringify([...q.answer.options.map((o) => o.path), ...(q.answer.other ? [q.answer.other.path] : [])]);
     root.append(card);
   }
   saveBtn = el('button', { class: 'save', type: 'button', disabled: '' }, 'Save answer');
@@ -214,7 +285,13 @@ function render(result) {
 }
 
 function cardFor(path) {
-  return [...root.querySelectorAll('section.q')].find((s) => s.dataset.path === path);
+  return [...root.querySelectorAll('section.q')].find((s) =>
+    s.dataset.path === path || (s.dataset.paths && JSON.parse(s.dataset.paths).includes(path)));
+}
+// Rejections come back per fact path; map them to the question that set it.
+function questionPathFor(path) {
+  const c = cardFor(path);
+  return c ? c.dataset.path : path;
 }
 
 async function save() {
@@ -227,7 +304,8 @@ async function save() {
   try {
     const r = await app.callServerTool({
       name: 'profile_set',
-      arguments: { workspace, set: entries.map(([path, a]) => ({ path, value: a.value, source: 'user' })) },
+      arguments: { workspace, set: entries.flatMap(([path, a]) =>
+        (a.sets || [{ path, value: a.value }]).map((x) => ({ path: x.path, value: x.value, source: 'user' }))) },
     });
     env = r.structuredContent;
   } catch (e) {
@@ -238,7 +316,7 @@ async function save() {
     saveBtn.disabled = false;
     return;
   }
-  const rejected = new Map((env.rejected || []).map((r) => [r.path, r.reason || 'Not accepted']));
+  const rejected = new Map((env.rejected || []).map((r) => [questionPathFor(r.path), r.reason || 'Not accepted']));
   for (const [path, why] of rejected) {
     const c = cardFor(path);
     if (c) { const e = c.querySelector('.err'); e.textContent = why; e.hidden = false; }
@@ -255,6 +333,7 @@ async function save() {
   }
   const lines = saved.map(([p, a]) => {
     const q = questions.find((x) => x.path === p);
+    if (q && q.answer && q.answer.kind === 'multiselect') return '- Situations that apply: ' + a.label;
     return '- ' + (q ? q.question : p) + ' ' + a.label;
   });
   statusEl.textContent = saved.length ? 'Saved ' + saved.length + '.' : '';

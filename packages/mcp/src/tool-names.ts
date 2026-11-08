@@ -12,6 +12,7 @@ export const TOOL_NAMES = [
   'expenses_import',
   'scenario_compare',
   'review_checks',
+  'return_review',
   'forms_fill',
   'filing_prepare',
   'kb_search',

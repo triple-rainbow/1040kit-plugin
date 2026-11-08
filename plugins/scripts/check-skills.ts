@@ -24,6 +24,7 @@ const PLAYBOOK_ORDER = [
   'deductions_find',
   'expenses_import',
   'review_checks',
+  'return_review',
   'explain_line',
   'forms_fill',
   'filing_prepare',

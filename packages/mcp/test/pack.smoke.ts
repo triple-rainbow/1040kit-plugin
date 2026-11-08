@@ -146,9 +146,13 @@ test(
   'OCR a W-2 image, then forms_fill loads the bundled IRS PDFs',
   { timeout: 300_000 },
   async () => {
+    const first = await call<{
+      acknowledgment: { agreed: boolean; text: string };
+    }>('workspace_init', { year: 2025 });
+    assert.equal(first.ok && first.acknowledgment.text, ACKNOWLEDGMENT_TEXT);
     const ws = await call<{ workspace: string; inbox: string }>(
       'workspace_init',
-      { year: 2025 }
+      { year: 2025, acknowledged: true }
     );
     assert.ok(ws.ok, JSON.stringify(ws));
     const { workspace } = ws;
@@ -188,18 +192,32 @@ test(
     for (let round = 0; round < 20; round++) {
       const next = await call<{
         done: boolean;
-        questions: { path: string; blocking: boolean }[];
+        questions: { path: string; blocking: boolean; answer?: any }[];
       }>('interview_next', { workspace, limit: 10 });
       assert.ok(next.ok, JSON.stringify(next));
       if (next.done) break;
       const set = next.questions.flatMap((q) => {
+        if (q.answer?.kind === 'multiselect')
+          return [
+            ...q.answer.options.map((o: { path: string }) => ({
+              path: o.path,
+              value: answerFor(o.path),
+              source: 'user',
+            })),
+            ...(q.answer.other
+              ? [{ path: q.answer.other.path, value: [], source: 'user' }]
+              : []),
+          ];
         const value = answerFor(q.path);
         return value === undefined
           ? []
           : [{ path: q.path, value, source: 'user' }];
       });
       const stuck = next.questions.filter(
-        (q) => q.blocking && answerFor(q.path) === undefined
+        (q) =>
+          q.blocking &&
+          q.answer?.kind !== 'multiselect' &&
+          answerFor(q.path) === undefined
       );
       assert.deepEqual(
         stuck.map((q) => q.path),
@@ -219,12 +237,15 @@ test(
     });
     assert.ok(calc.ok && calc.complete, JSON.stringify(calc));
 
-    const noAck = await call('forms_fill', { workspace });
-    assert.equal(noAck.error?.code, 'ACK_REQUIRED');
-    assert.ok(noAck.error?.message.includes(ACKNOWLEDGMENT_TEXT));
+    const noReview = await call('forms_fill', { workspace });
+    assert.equal(noReview.error?.code, 'REVIEW_REQUIRED');
+    const review = await call<{ ready: boolean }>('return_review', {
+      workspace,
+    });
+    assert.ok(review.ok && review.ready, JSON.stringify(review));
     const filled = await call<{ files: string[]; unmappedLines: string[] }>(
       'forms_fill',
-      { workspace, acknowledged: true }
+      { workspace }
     );
     assert.ok(filled.ok, `${JSON.stringify(filled)}\n${stderr}`);
     assert.deepEqual(filled.unmappedLines, []);

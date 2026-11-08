@@ -112,11 +112,16 @@ export interface LastCalc {
   result: ReturnResult;
 }
 
-/** The user's sign-off before forms_fill (see output/acknowledgment.ts). */
+/** The user's one-time agreement at the start (see output/acknowledgment.ts). */
 export interface Acknowledgment {
   text: string;
   at: string;
-  /** The facts the user signed off on; any change requires a new sign-off. */
+}
+
+/** The last return_review that found nothing blocking (see tools/return-review.ts). */
+export interface Review {
+  at: string;
+  /** The facts that were reviewed; forms_fill needs a review of the current facts. */
   factsHash: string;
 }
 
@@ -140,4 +145,5 @@ export interface StoreData {
   /** `${owner}:${file}` → what that import contributed. */
   expenseImports: Record<string, ExpenseImport>;
   acknowledgment?: Acknowledgment;
+  review?: Review;
 }

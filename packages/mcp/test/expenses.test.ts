@@ -16,7 +16,7 @@ const deps = fakeDeps();
 
 beforeEach(async () => {
   env = await freshEnv();
-  const r = await workspaceInit({ year: 2025 }, deps);
+  const r = await workspaceInit({ year: 2025, acknowledged: true }, deps);
   assert.ok(r.ok);
   ws = r.workspace;
 });
