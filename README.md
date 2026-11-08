@@ -1,10 +1,36 @@
 # 1040kit
 
-Free AI tax software that runs on your computer. Your AI assistant (Claude Code, Codex, and soon Claude Desktop and ChatGPT) prepares your US federal return with 1040kit: W-2 and 1099 income, filed by printing and mailing it or by entering it in IRS Free File Fillable Forms. Your documents and your return never leave your computer.
+**Self-employed tax software you just talk to.** Put your 1099s in a folder, and your AI assistant (Claude Code or Codex) fills in Schedule C, finds your deductions and prepares a US federal return to print and mail, or to e-file free through IRS Free File Fillable Forms. No tax know-how needed.
 
-1040kit is not tax advice. You review and sign your own return.
+It's built for freelancers, contractors, and 1099-NEC and 1099-K filers, including anyone with a W-2 job on the side. Free for the 2026 tax year; launching January 2027. Website: https://1040kit.com
 
-To install it, see [`docs/install.md`](docs/install.md). What it computes, flags or doesn't handle yet: [`docs/coverage.md`](docs/coverage.md). Website: https://1040kit.com
+1040kit is software that helps you prepare your own return. It is not affiliated with the IRS and does not give tax, legal or accounting advice. You review and sign your own return.
+
+## How it works
+
+1. **Upload your documents.** Put your 1099s, any W-2, bank and card statements (CSV) and last year's return in one folder on your computer. 1040kit sorts them and tells you if anything is missing.
+2. **The AI maps every box.** Each amount goes to the right line of Schedule C, Schedule SE and Form 1040. The assistant only asks what your documents can't tell it, and you see your deductions and your refund or balance due as you go.
+3. **Review and file.** Ask why for any number and get the IRS rule behind it. Then sign the return yourself, and print and mail it, or e-file with Free File Fillable Forms using a line-by-line entry sheet.
+
+## What it handles
+
+- **Documents:** 1099-NEC, 1099-K (with personal payments taken out), 1099-MISC, W-2, 1099-INT, 1099-DIV, bank and card statements (CSV) and last year's return.
+- **Self-employment:** one Schedule C per person (you and your spouse), with expenses found in your statements, home office (simplified or actual) and business mileage; Schedule SE, the deduction for half of it, and Additional Medicare Tax on Form 8959; estimated payments you already made.
+- **Deductions and credits:** the 20% qualified business income deduction, self-employed health insurance, SEP-IRA contributions, student loan interest, no tax on tips and overtime, the earned income credit, and the child tax credit and credit for other dependents.
+- **Filers:** single, married filing jointly and head of household, taking the standard deduction, with rent and royalty income from up to three properties.
+
+Not supported yet: state returns, married filing separately, itemized deductions, Social Security income, retirement distributions, unemployment, HSAs, education and child-care credits, stock or crypto sales, rental property depreciation, K-1s, and planning next year's quarterly payments. The full list of what it computes, flags or doesn't handle: [`docs/coverage.md`](docs/coverage.md).
+
+## Privacy and accuracy
+
+- **Your documents and your return never leave your computer.** When the assistant needs an IRS rule, 1040kit sends only the question, with SSNs and account numbers removed. Your conversation with the assistant itself falls under that assistant's own privacy terms.
+- **SSNs are masked.** Social Security and account numbers are replaced with placeholders before your information reaches the AI. 1040kit never stores SSNs, ITINs or bank account numbers; you write them on the printed forms.
+- **No account.** Nothing to sign up for, no tracking, no ads.
+- **The AI never does the math.** Tested tax code (`packages/engine`) calculates every line and shows the IRS instruction it comes from; its test suite includes worked examples from IRS publications.
+
+## Install
+
+See [`docs/install.md`](docs/install.md). You need Node.js 22+ and Claude Code or Codex.
 
 ## What's here
 
