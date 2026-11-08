@@ -1,6 +1,6 @@
 # Install 1040kit
 
-1040kit is free AI tax software. It works inside an AI assistant on your computer (Claude Code or Codex) and prepares your US federal return: W-2 and 1099 income, filed by printing and mailing it or by entering it in IRS Free File Fillable Forms. Your documents and your return never leave your computer.
+1040kit is self-employed tax software you talk to. It works inside an AI assistant on your computer (Claude Code or Codex) and prepares your US federal return: W-2 and 1099 income, filed by printing and mailing it or by entering it in IRS Free File Fillable Forms. Your documents and your return never leave your computer.
 
 1040kit is not tax advice. You review and sign your own return.
 

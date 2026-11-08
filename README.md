@@ -1,8 +1,8 @@
 # 1040kit
 
-**Self-employed tax software you just talk to.** Put your 1099s in a folder, and your AI assistant (Claude Code or Codex) fills in Schedule C, finds your deductions and prepares a US federal return to print and mail, or to e-file free through IRS Free File Fillable Forms. No tax know-how needed.
+**Self-employed tax software you just talk to.** Put your 1099s in a folder, and your AI assistant (Claude Code or Codex) fills in Schedule C, finds your deductions and prepares a US federal return to print and mail, or to e-file through IRS Free File Fillable Forms. No tax know-how needed.
 
-It's built for freelancers, contractors, and 1099-NEC and 1099-K filers, including anyone with a W-2 job on the side. Free for the 2026 tax year; launching January 2027. Website: https://1040kit.com
+It's built for freelancers, contractors, and 1099-NEC and 1099-K filers, including anyone with a W-2 job on the side. Launching January 2027. Website: https://1040kit.com
 
 1040kit is software that helps you prepare your own return. It is not affiliated with the IRS and does not give tax, legal or accounting advice. You review and sign your own return.
 
@@ -27,6 +27,10 @@ Not supported yet: state returns, married filing separately, itemized deductions
 - **SSNs are masked.** Social Security and account numbers are replaced with placeholders before your information reaches the AI. 1040kit never stores SSNs, ITINs or bank account numbers; you write them on the printed forms.
 - **No account.** Nothing to sign up for, no tracking, no ads.
 - **The AI never does the math.** Tested tax code (`packages/engine`) calculates every line and shows the IRS instruction it comes from; its test suite includes worked examples from IRS publications.
+
+## Pricing
+
+The 2026 tax year costs nothing. Prices for later tax years aren't set yet; if 1040kit starts charging, that will be announced before the tax year begins, and 2026 returns stay free.
 
 ## Install
 
