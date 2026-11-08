@@ -1,0 +1,45 @@
+{
+  "name": "Pub 501 Table 8 Example 3: dependent, 18 and blind, $1,300 interest and $2,900 wages",
+  "source": "Publication 501 (2025), Standard Deduction for Dependents, Example 3, p. 24: 2,900 + 450 = 3,350; line 7a 3,350; plus 2,000 for one box (single, blind); standard deduction 5,350.",
+  "facts": {
+    "taxYear": 2025,
+    "filingStatus": "single",
+    "taxpayer": {
+      "id": "taxpayer",
+      "dateOfBirth": "2007-03-01",
+      "hasValidSsn": true,
+      "canBeClaimedAsDependent": true,
+      "blind": true
+    },
+    "dependents": [],
+    "w2s": [
+      {
+        "id": "w2_1",
+        "owner": "taxpayer",
+        "wages": 290000,
+        "federalWithheld": 0,
+        "ssWages": 290000,
+        "ssTax": 17980,
+        "medicareWages": 290000,
+        "medicareTax": 4205
+      }
+    ],
+    "int1099s": [
+      {
+        "id": "int_1",
+        "owner": "taxpayer",
+        "interest": 130000
+      }
+    ],
+    "div1099s": [],
+    "nec1099s": [],
+    "misc1099s": [],
+    "k1099s": [],
+    "businesses": [],
+    "e1098s": [],
+    "rentals": []
+  },
+  "expect": {
+    "standardDeduction": 5350
+  }
+}

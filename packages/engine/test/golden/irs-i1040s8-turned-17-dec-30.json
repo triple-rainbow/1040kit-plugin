@@ -1,0 +1,48 @@
+{
+  "name": "Schedule 8812 instructions Example 1: child turned 17 on December 30, 2025 (ODC, not CTC)",
+  "source": "Instructions for Schedule 8812 (2025), Qualifying child for CTC, Example 1: a child who turned 17 on December 30, 2025 can't be used for the CTC/ACTC; the child can still be a dependent for the credit for other dependents. Taxpayer facts (single W-2 of 60,000) are filler.",
+  "facts": {
+    "taxYear": 2025,
+    "filingStatus": "single",
+    "taxpayer": {
+      "id": "taxpayer",
+      "dateOfBirth": "1980-01-01",
+      "hasValidSsn": true,
+      "canBeClaimedAsDependent": false
+    },
+    "dependents": [
+      {
+        "id": "dependent_1",
+        "dateOfBirth": "2008-12-30",
+        "relationship": "child",
+        "monthsLivedWithTaxpayer": 12,
+        "hasValidSsn": true,
+        "providedOverHalfOwnSupport": false
+      }
+    ],
+    "w2s": [
+      {
+        "id": "w2_1",
+        "owner": "taxpayer",
+        "wages": 6000000,
+        "federalWithheld": 0,
+        "ssWages": 6000000,
+        "ssTax": 372000,
+        "medicareWages": 6000000,
+        "medicareTax": 87000
+      }
+    ],
+    "int1099s": [],
+    "div1099s": [],
+    "nec1099s": [],
+    "misc1099s": [],
+    "k1099s": [],
+    "businesses": [],
+    "e1098s": [],
+    "rentals": []
+  },
+  "expect": {
+    "ctcChildren": 0,
+    "odcDependents": 1
+  }
+}

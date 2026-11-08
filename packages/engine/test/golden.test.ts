@@ -48,7 +48,11 @@ for (const { file, c } of cases) {
       if (key === 'complete') got = r.complete;
       else if (key.startsWith('summary.'))
         got = r.summary[key.slice('summary.'.length) as keyof typeof r.summary];
-      else got = r.nodes[key]?.value ?? 0;
+      else {
+        const node = r.nodes[key];
+        assert.ok(node, `${key}: no such node`);
+        got = node.value;
+      }
       assert.equal(got, expected, `${key}`);
     }
     if (c.forms)

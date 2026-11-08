@@ -1,0 +1,42 @@
+{
+  "name": "Form 8959 instructions Example 2 (Bob): single, $220,000 SE income, no wages",
+  "source": "Instructions for Form 8959 (2025), Examples, Example 2, p. 2: tax on 220,000 - 200,000 = 20,000; x 0.9% = 180. SE income built as a Schedule C profit of 238,224 (x 92.35% = 220,000 on Schedule SE line 6).",
+  "facts": {
+    "taxYear": 2025,
+    "filingStatus": "single",
+    "taxpayer": {
+      "id": "taxpayer",
+      "dateOfBirth": "1978-01-01",
+      "hasValidSsn": true,
+      "canBeClaimedAsDependent": false
+    },
+    "dependents": [],
+    "w2s": [],
+    "int1099s": [],
+    "div1099s": [],
+    "nec1099s": [
+      {
+        "id": "nec_1",
+        "owner": "taxpayer",
+        "payerToken": "{{PAYER:nec_1}}",
+        "nonemployeeComp": 23822400
+      }
+    ],
+    "misc1099s": [],
+    "k1099s": [],
+    "businesses": [
+      {
+        "owner": "taxpayer",
+        "name": "Example Consulting",
+        "expenses": {}
+      }
+    ],
+    "e1098s": [],
+    "rentals": []
+  },
+  "expect": {
+    "f8959.total": 180,
+    "sch2.additionalMedicareTax": 180,
+    "f8959.seIncome": 220000
+  }
+}
