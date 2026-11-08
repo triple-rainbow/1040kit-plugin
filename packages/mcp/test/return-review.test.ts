@@ -354,3 +354,20 @@ test('the dependent credit box follows the engine, not just age and SSN', () => 
     'ctc'
   );
 });
+
+test('the summary names the forms and its sources in plain words', async () => {
+  await set(identity);
+  await reviewAndConfirm();
+  assert.ok((await formsFill({ workspace: ws }, deps())).ok);
+  const md = await readFile(join(ws, 'outputs', '2025-summary.md'), 'utf8');
+  assert.match(md, /## Forms in this return\n\n- Form 1040\n/);
+  assert.doesNotMatch(md, /\bf1040\b|schC\.taxpayer|How: /);
+  assert.match(md, /- On Form 1040, line 1a/);
+  const mail = await filingPrepare({ workspace: ws, path: 'mail' }, deps());
+  assert.ok(mail.ok);
+  const instructions = await readFile(
+    join(ws, 'outputs', '2025-mailing-instructions.md'),
+    'utf8'
+  );
+  assert.match(instructions, /Attach Copy B of your W-2 /);
+});

@@ -1,8 +1,9 @@
 import type { EngineApi, ReturnResult } from '@1040kit/engine';
 
-import { drivers } from '../calc.ts';
+import { drivers, FORM_ORDER } from '../calc.ts';
 import type { StoreData } from '../store/types.ts';
 import { currentAcknowledgment } from './acknowledgment.ts';
+import { FORM_TITLES } from './field-maps.ts';
 
 const usd = (v: number) => `$${Math.abs(v).toLocaleString('en-US')}`;
 
@@ -58,11 +59,11 @@ export function summaryMarkdown(
         expl = null;
       }
       if (expl) {
-        out.push(`  - How: ${expl.node.trace.formula}`);
-        for (const c of expl.node.citations.slice(0, 2)) {
-          out.push(
-            `  - Source: [${c.docId}${c.section ? `, ${c.section}` : ''}](${c.url})`
-          );
+        const n = expl.node;
+        if (n.form && n.line)
+          out.push(`  - On ${FORM_TITLES[n.form]}, line ${n.line}`);
+        for (const c of n.citations.slice(0, 2)) {
+          out.push(`  - IRS source: [${c.section ?? c.docId}](${c.url})`);
         }
       }
     }
@@ -76,8 +77,10 @@ export function summaryMarkdown(
     out.push('');
   }
 
-  out.push('## Forms', '');
-  out.push(result.forms.join(', '), '');
+  out.push('## Forms in this return', '');
+  for (const f of FORM_ORDER.filter((f) => result.forms.includes(f)))
+    out.push(`- ${FORM_TITLES[f]}`);
+  out.push('');
   out.push('## Your agreement and review', '');
   const ack = currentAcknowledgment(data);
   if (ack) {
