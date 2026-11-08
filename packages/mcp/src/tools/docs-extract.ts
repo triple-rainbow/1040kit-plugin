@@ -19,7 +19,7 @@ export const inputSchema = {
 
 export const handler = defineTool(inputSchema, async (input, deps) => {
   const store = await openStore(input.workspace);
-  requireAcknowledgment(await store.read());
+  requireAcknowledgment(await store.read(), store.workspace);
   const at = deps.now().toISOString();
   return store.write((data) =>
     extractDocs(store.workspace, data, input.docIds, at, readDocTextWithOcr)

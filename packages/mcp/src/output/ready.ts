@@ -1,6 +1,6 @@
 import type { ReturnResult } from '@1040kit/engine';
 
-import { factsHash } from '../calc.ts';
+import { factsHash, reviewHash } from '../calc.ts';
 import { ToolError } from '../envelope.ts';
 import type { StoreData } from '../store/types.ts';
 
@@ -59,13 +59,19 @@ export function missingIdentity(data: StoreData): string[] {
   return out;
 }
 
-/** Refuse (REVIEW_REQUIRED) unless return_review was ready for the current facts. */
+/**
+ * Refuse (REVIEW_REQUIRED) unless the user confirmed a ready return_review of
+ * exactly the current return (facts, documents, names and address).
+ */
 export function requireReview(data: StoreData): void {
-  if (data.review?.factsHash === factsHash(data.facts)) return;
+  const r = data.review;
+  if (r && r.hash === reviewHash(data) && r.confirmedAt) return;
   throw new ToolError(
     'REVIEW_REQUIRED',
-    data.review
-      ? 'The facts changed since the last return_review. Run return_review again and go through it with the user.'
-      : 'Run return_review first and go through it with the user.'
+    !r
+      ? 'Run return_review, go through it with the user, and when they say it looks good call return_review again with confirmed: true.'
+      : r.hash !== reviewHash(data)
+        ? 'The return changed since the last return_review (facts, documents, or names and address). Run return_review again and go through it with the user.'
+        : 'The user has not confirmed the review yet. Show it to them; when they say it looks good, call return_review again with confirmed: true.'
   );
 }

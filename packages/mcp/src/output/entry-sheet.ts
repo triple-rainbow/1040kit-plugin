@@ -81,7 +81,9 @@ export function entrySheetMarkdown(
     hoh: 'Head of household',
   };
   if (data.facts.filingStatus)
-    out.push(`- Filing status: check **${STATUS[data.facts.filingStatus]}**`);
+    out.push(
+      `- Filing status: check **${STATUS[data.facts.filingStatus] ?? data.facts.filingStatus}**`
+    );
   if (data.facts.digitalAssetActivity !== undefined)
     out.push(
       `- Digital assets question: check **${data.facts.digitalAssetActivity ? 'Yes' : 'No'}**`
@@ -89,11 +91,13 @@ export function entrySheetMarkdown(
   const has8812 = result.forms.includes('sch8812');
   data.facts.dependents.forEach((d, i) => {
     const n = id.dependents?.[d.id];
-    const box = has8812
-      ? dependentCreditBox(d, y) === 'ctc'
+    const credit = has8812 ? dependentCreditBox(d, data.facts) : 'none';
+    const box =
+      credit === 'ctc'
         ? '; check **Child tax credit**'
-        : '; check **Credit for other dependents**'
-      : '';
+        : credit === 'odc'
+          ? '; check **Credit for other dependents**'
+          : '';
     out.push(
       `- Dependent ${i + 1}: ${[n?.firstName, n?.lastName].filter(Boolean).join(' ') || d.id}, ${d.relationship ?? ''}, SSN: ${TYPE_YOURSELF}${box}`
     );

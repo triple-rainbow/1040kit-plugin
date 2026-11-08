@@ -7,10 +7,14 @@
  */
 import { readFile } from 'node:fs/promises';
 import {
+  classifyDependent,
   getParams,
+  type Dependent,
+  type DependentCredit,
   type FormId,
   type PersonId,
   type ReturnResult,
+  type TaxFacts,
 } from '@1040kit/engine';
 import {
   PDFCheckBox,
@@ -136,15 +140,16 @@ function ageAtYearEnd(
   return year - Number(dob.slice(0, 4));
 }
 
-/** Which Form 1040 dependent box to check: child tax credit or credit for other dependents. */
+/**
+ * Which Form 1040 dependent box to check, from the engine's own
+ * classification (the same one Schedule 8812 counts): child tax credit,
+ * credit for other dependents, or neither.
+ */
 export function dependentCreditBox(
-  d: { dateOfBirth?: string; hasValidSsn?: boolean },
-  year: number
-): 'ctc' | 'odc' {
-  const age = ageAtYearEnd(d.dateOfBirth, year);
-  return age !== undefined && age < 17 && d.hasValidSsn === true
-    ? 'ctc'
-    : 'odc';
+  d: Dependent,
+  facts: TaxFacts
+): DependentCredit {
+  return classifyDependent(d, facts, getParams(facts.taxYear)).credit;
 }
 
 /** Born before January 2 of (year − 64): 65 or older for the standard-deduction add-on. */
@@ -153,9 +158,10 @@ function senior(dob: string | undefined, year: number): boolean {
 }
 
 /**
- * Every line value one form prints: the engine's lines for that form, lines
+ * Every amount line one form prints: the engine's lines for that form, lines
  * that repeat a value printed elsewhere (`lineAliases`, e.g. Schedule 2 line
- * 21 = Form 1040 line 23) and the field map's `copies`. The PDF filler and
+ * 21 = Form 1040 line 23) and the field map's `copies`, without the map's
+ * `consumed` lines (printed by their own section). The PDF filler and
  * the Free File entry sheet both use this, so they always agree.
  */
 export function formLineValues(
@@ -194,6 +200,12 @@ export function formLineValues(
     const src = sources.find((s) => values.has(s));
     if (src) values.set(target, { ...values.get(src)!, printed: target });
   }
+  // Lines the form prints in its own section (Schedule E 1a, 1b and 2:
+  // address, property type, days), not as an amount on its line.
+  for (const base of map?.consumed ?? []) {
+    for (const line of [...values.keys()])
+      if (line.split(/[:.]/)[0] === base) values.delete(line);
+  }
   return values;
 }
 
@@ -223,9 +235,7 @@ export async function fillReturn(
     const values = new Map(
       [...formLineValues(result, formId, map)].map(([l, v]) => [l, v.value])
     );
-    const consumed = new Set(map.consumed ?? []);
     for (const [line, value] of values) {
-      if (consumed.has(line.split(/[:.]/)[0]!)) continue;
       if (value === 0) continue;
       const field = map.lines[line];
       if (!field) {
@@ -419,8 +429,10 @@ function fill1040(
     f.check(row.livedWith!, (d.monthsLivedWithTaxpayer ?? 0) > 6);
     f.check(row.student!, d.fullTimeStudent === true);
     f.check(row.disabled!, d.permanentlyDisabled === true);
-    if (has8812)
-      f.check(dependentCreditBox(d, year) === 'ctc' ? row.ctc! : row.odc!);
+    if (has8812) {
+      const credit = dependentCreditBox(d, facts);
+      if (credit !== 'none') f.check(credit === 'ctc' ? row.ctc! : row.odc!);
+    }
   });
 }
 

@@ -6,7 +6,7 @@ import type { FormId, LineNode, ReturnResult, TaxFacts } from '@1040kit/engine';
 import { PDFDocument } from 'pdf-lib';
 import { extractText, getDocumentProxy } from 'unpdf';
 
-import { factsHash } from '../src/calc.ts';
+import { reviewHash } from '../src/calc.ts';
 import { ACKNOWLEDGMENT_TEXT } from '../src/output/acknowledgment.ts';
 import { fillReturn, validateMaps } from '../src/output/fill.ts';
 import { openStore } from '../src/store/workspace.ts';
@@ -29,14 +29,15 @@ let env: TestEnv;
 let ws: string;
 
 const ACCT = '0000987654321';
-/** What return_review records when nothing blocks (the review tool has its own tests). */
+/** What a confirmed return_review records (the review tool has its own tests). */
 async function markReviewed() {
   await (
     await openStore(ws)
   ).write((d) => {
     d.review = {
       at: '2026-02-01T12:00:00.000Z',
-      factsHash: factsHash(d.facts),
+      hash: reviewHash(d),
+      confirmedAt: '2026-02-01T12:00:00.000Z',
     };
     return d;
   });

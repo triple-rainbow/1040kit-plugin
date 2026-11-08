@@ -5,7 +5,7 @@ import { defineTool } from '../envelope.ts';
 import { requireAcknowledgment } from '../output/acknowledgment.ts';
 import { isAnswered } from '../store/profile.ts';
 import { openStore } from '../store/workspace.ts';
-import { PHASES, planQuestions } from '../ui/interview-plan.ts';
+import { PHASES, planQuestions, type Phase } from '../ui/interview-plan.ts';
 import { INTERVIEW_WIDGET_URI } from '../ui/interview-widget.ts';
 import { workspaceSchema, type ToolDefinition } from './common.ts';
 
@@ -17,7 +17,7 @@ export const inputSchema = {
 export const handler = defineTool(inputSchema, async (input, deps) => {
   const store = await openStore(input.workspace);
   const data = await store.read();
-  requireAcknowledgment(data);
+  requireAcknowledgment(data, store.workspace);
   const all = engineCall(() => deps.engine.requiredFacts(data.facts));
   const planned = planQuestions(
     all.filter((m) => !isAnswered(data, m.path)),
@@ -32,8 +32,14 @@ export const handler = defineTool(inputSchema, async (input, deps) => {
       done: true,
     };
   }
-  // One phase at a time: deductions only once the income phase is finished.
-  const phase = planned[0]!.phase;
+  // One phase at a time. The income phase is finished once its required
+  // questions are answered; optional income questions the user skipped
+  // don't hold back deductions and credits, and come back at the end.
+  const phase: Phase = planned.some((q) => q.phase === 'income' && q.blocking)
+    ? 'income'
+    : planned.some((q) => q.phase === 'deductions')
+      ? 'deductions'
+      : 'income';
   const inPhase = planned.filter((q) => q.phase === phase);
   return {
     workspace: store.workspace,

@@ -242,6 +242,15 @@ test('W-2 + 1099-NEC → complete return → forms and both filing packages', as
   assert.deepEqual(review.blockers, []);
   assert.equal(review.return.summary.refundOrOwed, calc.summary.refundOrOwed);
   assert.ok(review.confirmWithUser.length > 0);
+  // Ready isn't enough: the user has to say the numbers look good.
+  assert.equal(review.confirmed, false);
+  assert.match(review.confirmPrompt ?? '', /terms-of-service/);
+  const unconfirmed = await call(formsFill({ workspace }, deps));
+  assert.equal(!unconfirmed.ok && unconfirmed.error.code, 'REVIEW_REQUIRED');
+  const confirmed = await call(
+    returnReview({ workspace, confirmed: true }, deps)
+  );
+  assert.ok(confirmed.ok && confirmed.confirmed, JSON.stringify(confirmed));
   const filled = await call(formsFill({ workspace }, deps));
   assert.ok(filled.ok, JSON.stringify(filled));
   assert.ok(

@@ -243,6 +243,11 @@ test(
       workspace,
     });
     assert.ok(review.ok && review.ready, JSON.stringify(review));
+    const confirmed = await call<{ confirmed: boolean }>('return_review', {
+      workspace,
+      confirmed: true,
+    });
+    assert.ok(confirmed.ok && confirmed.confirmed, JSON.stringify(confirmed));
     const filled = await call<{ files: string[]; unmappedLines: string[] }>(
       'forms_fill',
       { workspace }

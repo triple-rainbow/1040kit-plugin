@@ -8,6 +8,7 @@ import { defineTool, ToolError } from '../envelope.ts';
 import { categorize } from '../expenses/categorize.ts';
 import { parseStatement } from '../expenses/parse.ts';
 import { scheduleCExpense } from '../store/facts-schema.ts';
+import { requireAcknowledgment } from '../output/acknowledgment.ts';
 import { inboxPath, openStore } from '../store/workspace.ts';
 import { workspaceSchema, type ToolDefinition } from './common.ts';
 
@@ -67,6 +68,8 @@ async function resolveCsv(
 
 export const handler = defineTool(inputSchema, async (input, deps) => {
   const store = await openStore(input.workspace);
+  // It reads bank and card statements: only after the start agreement.
+  requireAcknowledgment(await store.read(), store.workspace);
   const { abs, rel } = await resolveCsv(store.workspace, input.file);
   let statement;
   try {

@@ -19,7 +19,7 @@ export const inputSchema = { workspace: workspaceSchema };
 export const handler = defineTool(inputSchema, async (input, deps) => {
   const store = await openStore(input.workspace);
   const data = await store.read();
-  const ack = requireAcknowledgment(data);
+  const ack = requireAcknowledgment(data, store.workspace);
   const result = readyResult(data);
   if (!hasForms(result.taxYear)) {
     throw new ToolError(

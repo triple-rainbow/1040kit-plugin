@@ -7,7 +7,10 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { afterEach, beforeEach, test } from 'node:test';
 
+import { emptyFacts } from '@1040kit/engine';
+
 import { defaultDeps } from '../src/deps.ts';
+import { dependentCreditBox } from '../src/output/fill.ts';
 import { openStore } from '../src/store/workspace.ts';
 import { handler as calcReturn } from '../src/tools/calc-return.ts';
 import { handler as docsScan } from '../src/tools/docs-scan.ts';
@@ -80,6 +83,14 @@ beforeEach(async () => {
 
 afterEach(async () => env.cleanup());
 
+/** The user saw the review and said it looks good. */
+async function reviewAndConfirm() {
+  const r = await returnReview({ workspace: ws }, deps());
+  assert.ok(r.ok && r.ready, JSON.stringify(r));
+  const c = await returnReview({ workspace: ws, confirmed: true }, deps());
+  assert.ok(c.ok && c.confirmed, JSON.stringify(c));
+}
+
 const identity = [
   { path: 'identity.taxpayer.firstName', value: 'Pat' },
   { path: 'identity.taxpayer.lastName', value: 'Example' },
@@ -133,8 +144,7 @@ test('forms_fill needs a review of the current facts', async () => {
   const before = await formsFill({ workspace: ws }, deps());
   assert.equal(!before.ok && before.error.code, 'REVIEW_REQUIRED');
 
-  const r = await returnReview({ workspace: ws }, deps());
-  assert.ok(r.ok && r.ready);
+  await reviewAndConfirm();
   const filled = await formsFill({ workspace: ws }, deps());
   assert.ok(filled.ok, JSON.stringify(filled));
 
@@ -164,7 +174,7 @@ test('filing_prepare needs the review; the entry sheet matches the return', asyn
   );
   assert.equal(!early.ok && early.error.code, 'REVIEW_REQUIRED');
 
-  assert.ok((await returnReview({ workspace: ws }, deps())).ok);
+  await reviewAndConfirm();
   const r = await filingPrepare(
     { workspace: ws, path: 'fillable_forms' },
     deps()
@@ -204,4 +214,139 @@ test('a review lists open deductions once, not one item each', async () => {
   // $11,000 withheld on $90,000 of wages: a balance due, shown as a positive amount.
   assert.equal(r.return.outcome.kind, 'amount_owed');
   assert.equal(r.return.outcome.amount, -r.return.summary.refundOrOwed);
+});
+
+test('a confirmation only counts for the review the user saw', async () => {
+  await set(identity);
+  // Confirming before any review: nothing to confirm yet.
+  const early = await returnReview({ workspace: ws, confirmed: true }, deps());
+  assert.ok(early.ok && early.ready);
+  assert.equal(early.confirmed, false);
+  assert.ok(early.notConfirmedBecause);
+  assert.equal(
+    (await formsFill({ workspace: ws }, deps())).ok,
+    false,
+    'not confirmed yet'
+  );
+  // The review the user saw, then a change, then "looks good": still not confirmed.
+  await returnReview({ workspace: ws }, deps());
+  await set([{ path: 'w2s[w2_1].federalWithheld', value: 1000000 }]);
+  const stale = await returnReview({ workspace: ws, confirmed: true }, deps());
+  assert.ok(stale.ok && stale.ready);
+  assert.equal(stale.confirmed, false);
+  // Shown again, then confirmed.
+  const ok = await returnReview({ workspace: ws, confirmed: true }, deps());
+  assert.ok(ok.ok && ok.confirmed);
+  assert.ok((await formsFill({ workspace: ws }, deps())).ok);
+});
+
+test('a document added after the confirmed review makes it stale', async () => {
+  await set(identity);
+  await reviewAndConfirm();
+  await writeFile(join(inbox, 'w2-second-job.pdf'), await w2Pdf());
+  assert.ok((await docsScan({ workspace: ws }, deps())).ok);
+  const fill = await formsFill({ workspace: ws }, deps());
+  assert.equal(!fill.ok && fill.error.code, 'REVIEW_REQUIRED');
+  const mail = await filingPrepare({ workspace: ws, path: 'mail' }, deps());
+  assert.equal(!mail.ok && mail.error.code, 'REVIEW_REQUIRED');
+});
+
+test('a name removed after the review stops filing_prepare', async () => {
+  await set(identity);
+  await reviewAndConfirm();
+  await set([{ path: 'identity.taxpayer.lastName', value: null }]);
+  const r = await filingPrepare(
+    { workspace: ws, path: 'fillable_forms' },
+    deps()
+  );
+  assert.equal(!r.ok && r.error.code, 'IDENTITY_REQUIRED');
+  // A name edit alone also makes the review stale.
+  await set([{ path: 'identity.taxpayer.lastName', value: 'Sample' }]);
+  const again = await filingPrepare(
+    { workspace: ws, path: 'fillable_forms' },
+    deps()
+  );
+  assert.equal(!again.ok && again.error.code, 'REVIEW_REQUIRED');
+});
+
+test('a skipped optional income question does not hold back deductions', async () => {
+  await set([
+    { path: 'taxpayer.dateOfBirth', value: null },
+    { path: 'screening.paidStudentLoanInterest', value: true },
+  ]);
+  const next = await interviewNext({ workspace: ws, limit: 20 }, deps());
+  assert.ok(next.ok);
+  assert.equal(
+    next.phase,
+    'deductions',
+    JSON.stringify(next.questions.map((q) => [q.path, q.blocking]))
+  );
+  assert.ok(next.questions.some((q) => q.path === 'e1098s'));
+});
+
+test('ACK_REQUIRED names the workspace, so a custom folder gets the agreement', async () => {
+  const custom = join(env.home, 'elsewhere', '2025');
+  const first = await workspaceInit({ year: 2025, path: custom }, deps());
+  assert.ok(first.ok);
+  const refused = await interviewNext({ workspace: first.workspace }, deps());
+  assert.equal(!refused.ok && refused.error.code, 'ACK_REQUIRED');
+  assert.ok(
+    !refused.ok &&
+      refused.error.message.includes(JSON.stringify(first.workspace)),
+    !refused.ok ? refused.error.message : ''
+  );
+  await workspaceInit(
+    { year: 2025, path: first.workspace, acknowledged: true },
+    deps()
+  );
+  assert.ok((await interviewNext({ workspace: first.workspace }, deps())).ok);
+});
+
+test('an agreement stored in the old shape asks again, without crashing', async () => {
+  await (
+    await openStore(ws)
+  ).write((d) => {
+    (d as { acknowledgment: unknown }).acknowledgment = {
+      text: 'I entered all Social Security numbers… (old text)',
+      at: '2026-01-01T00:00:00.000Z',
+      factsHash: 'abc',
+    };
+    return d;
+  });
+  const r = await interviewNext({ workspace: ws }, deps());
+  assert.equal(!r.ok && r.error.code, 'ACK_REQUIRED');
+  const again = await workspaceInit({ year: 2025, acknowledged: true }, deps());
+  assert.ok(again.ok && again.acknowledgment.agreed);
+  assert.ok((await interviewNext({ workspace: ws }, deps())).ok);
+});
+
+test('the dependent credit box follows the engine, not just age and SSN', () => {
+  const facts = {
+    ...emptyFacts(2025),
+    filingStatus: 'single' as const,
+    taxpayer: { id: 'taxpayer' as const, hasValidSsn: true },
+  };
+  const child = {
+    id: 'dependent_1',
+    dateOfBirth: '2015-05-05',
+    relationship: 'child' as const,
+    hasValidSsn: true,
+  };
+  assert.equal(
+    dependentCreditBox({ ...child, monthsLivedWithTaxpayer: 12 }, facts),
+    'ctc'
+  );
+  // Lived with the filer only 3 months: not a qualifying child, so no CTC box.
+  assert.notEqual(
+    dependentCreditBox({ ...child, monthsLivedWithTaxpayer: 3 }, facts),
+    'ctc'
+  );
+  // The filer has no valid SSN: no CTC.
+  assert.notEqual(
+    dependentCreditBox(
+      { ...child, monthsLivedWithTaxpayer: 12 },
+      { ...facts, taxpayer: { id: 'taxpayer', hasValidSsn: false } }
+    ),
+    'ctc'
+  );
 });

@@ -4,17 +4,38 @@
  * facts, unsupported items, review errors, documents that never made it onto
  * the return, identity), what deserves a second look (warnings, deductions
  * left unclaimed, answers that replaced a document value), the numbers to
- * show the user, and the questions only the user can confirm. When nothing
- * blocks, it records the review for these facts; forms_fill needs that.
+ * show the user, and the questions only the user can confirm.
+ *
+ * Two calls: the first records a ready review (bound to reviewHash: facts,
+ * documents, names and address) and gives the agent a short prompt for the
+ * user. When the user says the numbers look good, the agent calls again with
+ * confirmed: true, which records the confirmation for that same review.
+ * forms_fill and filing_prepare need a confirmed review of the current return.
  */
-import { computeAndCache, drivers, engineCall, factsHash } from '../calc.ts';
+import { z } from 'zod';
+
+import { computeAndCache, drivers, engineCall, reviewHash } from '../calc.ts';
 import { defineTool } from '../envelope.ts';
 import { requireAcknowledgment } from '../output/acknowledgment.ts';
 import { missingIdentity } from '../output/ready.ts';
 import { openStore } from '../store/workspace.ts';
 import { workspaceSchema, type ToolDefinition } from './common.ts';
 
-export const inputSchema = { workspace: workspaceSchema };
+export const inputSchema = {
+  workspace: workspaceSchema,
+  confirmed: z
+    .boolean()
+    .optional()
+    .describe(
+      'true only after the user saw this review and said the numbers look good.'
+    ),
+};
+
+/** Where the full terms of use live (the confirmation links here). */
+export const TERMS_URL = 'https://1040kit.com/terms-of-service';
+
+/** What the agent asks the user, short, after walking them through the review. */
+export const CONFIRM_PROMPT = `If everything looks right, reply “looks good” and I’ll fill in your forms. By confirming, you agree that your return is correct and complete to the best of your knowledge (terms: ${TERMS_URL}).`;
 
 interface Item {
   code: string;
@@ -43,7 +64,7 @@ const STATUS_LABEL: Record<string, string> = {
 
 export const handler = defineTool(inputSchema, async (input, deps) => {
   const store = await openStore(input.workspace);
-  requireAcknowledgment(await store.read());
+  requireAcknowledgment(await store.read(), store.workspace);
   return store.write((data) => {
     const result = computeAndCache(deps, data);
     const blockers: Item[] = [];
@@ -91,13 +112,18 @@ export const handler = defineTool(inputSchema, async (input, deps) => {
       const claimed = new Set(
         opps.filter((o) => o.status === 'claimed').map((o) => o.id)
       );
-      const raised = attention.map((a) => a.code).join(' ');
+      // A check named after the deduction ("check:head_of_household_may_apply")
+      // already raised it.
+      const raisedBy = (id: string) =>
+        attention.some(
+          (a) => a.code === `check:${id}` || a.code.startsWith(`check:${id}_`)
+        );
       const unclaimed = opps.filter(
         (o) =>
           o.status === 'possible' &&
           !WHAT_IFS.has(o.id) &&
           !(ALTERNATIVE_OF[o.id] && claimed.has(ALTERNATIVE_OF[o.id]!)) &&
-          !raised.includes(o.id)
+          !raisedBy(o.id)
       );
       if (unclaimed.length)
         attention.push({
@@ -114,12 +140,27 @@ export const handler = defineTool(inputSchema, async (input, deps) => {
     }
 
     const ready = blockers.length === 0;
-    if (ready)
-      data.review = {
-        at: deps.now().toISOString(),
-        factsHash: factsHash(data.facts),
-      };
-    else delete data.review;
+    const hash = reviewHash(data);
+    const now = deps.now().toISOString();
+    let confirmed = false;
+    let notConfirmedBecause: string | undefined;
+    if (!ready) {
+      delete data.review;
+    } else if (input.confirmed === true) {
+      // Only the review the user actually saw can be confirmed.
+      if (data.review?.hash === hash) {
+        data.review.confirmedAt = now;
+        confirmed = true;
+      } else {
+        data.review = { at: now, hash };
+        notConfirmedBecause =
+          'The return changed since the user last saw the review (or they never saw one). Show this review and ask again.';
+      }
+    } else if (data.review?.hash !== hash) {
+      data.review = { at: now, hash };
+    } else {
+      confirmed = !!data.review.confirmedAt;
+    }
 
     const used = data.docs.filter((d) => d.status === 'extracted');
     const f = data.facts;
@@ -140,9 +181,11 @@ export const handler = defineTool(inputSchema, async (input, deps) => {
         : f.dependents.length === 1
           ? 'one dependent'
           : `${f.dependents.length} dependents`;
-    const net = result.summary.refundOrOwed;
+    const node = (id: string) => result.nodes[id]?.value ?? 0;
     return {
       ready,
+      confirmed,
+      ...(notConfirmedBecause ? { notConfirmedBecause } : {}),
       blockers,
       attention,
       return: {
@@ -151,11 +194,12 @@ export const handler = defineTool(inputSchema, async (input, deps) => {
           ? STATUS_LABEL[result.filingStatus]
           : undefined,
         summary: result.summary,
+        // Form 1040 line 34 (overpaid) and line 37 (amount you owe).
         outcome:
-          net > 0
-            ? { kind: 'refund', amount: net }
-            : net < 0
-              ? { kind: 'amount_owed', amount: -net }
+          node('overpaid') > 0
+            ? { kind: 'refund', amount: node('overpaid') }
+            : node('amountOwed') > 0
+              ? { kind: 'amount_owed', amount: node('amountOwed') }
               : { kind: 'even', amount: 0 },
         forms: result.forms,
         drivers: drivers(result),
@@ -169,9 +213,12 @@ export const handler = defineTool(inputSchema, async (input, deps) => {
         'Your name(s) and home address are spelled the way they should print.',
         'Nothing in your tax year is missing: other income, a move, a marriage, a new child, or money you paid toward this year’s tax.',
       ],
-      next: ready
-        ? 'Walk the user through `return`, every `attention` item and every `confirmWithUser` line. When they confirm, call forms_fill.'
-        : 'Resolve every `blockers` item with the user, then call return_review again.',
+      ...(ready && !confirmed ? { confirmPrompt: CONFIRM_PROMPT } : {}),
+      next: !ready
+        ? 'Resolve every `blockers` item with the user, then call return_review again.'
+        : confirmed
+          ? 'The user confirmed these numbers. Call forms_fill.'
+          : 'Walk the user through `return`, every `attention` item and every `confirmWithUser` line, then ask `confirmPrompt` word for word. Only when they say it looks good, call return_review again with confirmed: true. Then call forms_fill.',
     };
   });
 });
@@ -180,7 +227,7 @@ export const definition: ToolDefinition = {
   name: 'return_review',
   title: 'Review the whole return',
   description:
-    'The final, holistic review before forms_fill. Recomputes the return and returns `blockers` (missing facts, unsupported items, review errors, documents not on the return, missing names or address), `attention` (warnings, deductions left unclaimed, answers that replaced a document value), the numbers to show (`return`) and `confirmWithUser` questions. `ready` is true when nothing blocks; forms_fill refuses (REVIEW_REQUIRED) until a ready review of the current facts.',
+    'The final, holistic review before forms_fill. Recomputes the return and returns `blockers` (missing facts, unsupported items, review errors, documents not on the return, missing names or address), `attention` (warnings, deductions left unclaimed, answers that replaced a document value), the numbers to show (`return`) and `confirmWithUser` questions. `ready` is true when nothing blocks. Then show the user the review and ask `confirmPrompt`; when they say it looks good, call again with confirmed: true. forms_fill and filing_prepare refuse (REVIEW_REQUIRED) until the user confirmed a ready review of the current return (facts, documents, names and address).',
   inputSchema,
   handler,
 };

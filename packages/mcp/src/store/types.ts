@@ -123,8 +123,10 @@ export interface Acknowledgment {
 /** The last return_review that found nothing blocking (see tools/return-review.ts). */
 export interface Review {
   at: string;
-  /** The facts that were reviewed; forms_fill needs a review of the current facts. */
-  factsHash: string;
+  /** reviewHash of what was reviewed (facts, documents, names and address). */
+  hash: string;
+  /** Set when the user confirmed these numbers look good (return_review confirmed: true). */
+  confirmedAt?: string;
 }
 
 export interface StoreData {

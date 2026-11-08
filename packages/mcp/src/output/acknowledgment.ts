@@ -13,10 +13,14 @@ export const ACKNOWLEDGMENT_TEXT =
   'It is not tax advice and does not take responsibility for the accuracy of your return. ' +
   'You review the numbers, write in the Social Security numbers yourself, and sign the return as its preparer.';
 
-export const ACK_REQUIRED_MESSAGE =
-  'Before starting, show the user this short agreement word for word and ask whether they agree. ' +
-  'Only if they agree, call workspace_init again with acknowledged: true.\n\n' +
-  `"${ACKNOWLEDGMENT_TEXT}"`;
+/** The ACK_REQUIRED message, naming the workspace so the agreement lands there. */
+export function ackRequiredMessage(workspace: string, year: number): string {
+  return (
+    'Before starting, show the user this short agreement word for word and ask whether they agree. ' +
+    `Only if they agree, call workspace_init again with year: ${year}, path: ${JSON.stringify(workspace)}, acknowledged: true.\n\n` +
+    `"${ACKNOWLEDGMENT_TEXT}"`
+  );
+}
 
 /** The stored agreement, if it is for the current text. */
 export function currentAcknowledgment(
@@ -27,8 +31,15 @@ export function currentAcknowledgment(
 }
 
 /** Refuse (ACK_REQUIRED) until the user agreed at the start. */
-export function requireAcknowledgment(data: StoreData): Acknowledgment {
+export function requireAcknowledgment(
+  data: StoreData,
+  workspace: string
+): Acknowledgment {
   const a = currentAcknowledgment(data);
-  if (!a) throw new ToolError('ACK_REQUIRED', ACK_REQUIRED_MESSAGE);
+  if (!a)
+    throw new ToolError(
+      'ACK_REQUIRED',
+      ackRequiredMessage(workspace, data.facts.taxYear)
+    );
   return a;
 }
