@@ -3,6 +3,7 @@ import { writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { afterEach, beforeEach, test } from 'node:test';
 import type {
+  FormId,
   LineNode,
   MissingFact,
   ReturnResult,
@@ -315,4 +316,32 @@ test('deductions, review and scenarios use the documented keys', async () => {
   assert.ok(s.ok, JSON.stringify(s));
   assert.deepEqual(s.base, emptySummary());
   assert.equal(s.scenarios[0]!.delta.refundOrOwed, 500);
+});
+
+test('calc_return lists only non-zero lines on forms that are on the return', async () => {
+  const deps = fakeDeps({
+    engine: fakeEngine({
+      computeReturn: (facts) => {
+        const r = resultWithLines(facts);
+        const extra = (id: string, form: FormId, line: string, value: number) =>
+          (r.nodes[id] = {
+            ...r.nodes.wages!,
+            id,
+            form,
+            line,
+            label: id,
+            value,
+          });
+        extra('zeroLine', 'f1040', '6b', 0);
+        extra('seniorCap', 'sch1a', '37', 6000); // sch1a is not on this return
+        return r;
+      },
+    }),
+  });
+  const r = await calcReturn({ workspace: ws }, deps);
+  assert.ok(r.ok, JSON.stringify(r));
+  const ids = r.lines.map((l) => l.id);
+  assert.ok(!ids.includes('zeroLine'));
+  assert.ok(!ids.includes('seniorCap'));
+  assert.ok(ids.includes('wages'));
 });
