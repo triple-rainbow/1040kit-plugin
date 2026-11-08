@@ -131,15 +131,6 @@ function returnName(data: StoreData): string | undefined {
   return [t, s].filter(Boolean).join(' & ') || undefined;
 }
 
-function ageAtYearEnd(
-  dob: string | undefined,
-  year: number
-): number | undefined {
-  if (!dob) return undefined;
-  // Every birthday has passed by December 31.
-  return year - Number(dob.slice(0, 4));
-}
-
 /**
  * Which Form 1040 dependent box to check, from the engine's own
  * classification (the same one Schedule 8812 counts): child tax credit,
