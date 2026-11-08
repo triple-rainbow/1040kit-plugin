@@ -1,9 +1,9 @@
 {
   "name": "1040kit-plugin",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "type": "module",
-  "description": "1040kit: free AI tax software that runs on your computer. Tax engine, MCP server and AI assistant plugins.",
+  "description": "1040kit: AI tax software for self-employed filers that runs on your computer. Tax engine, MCP server and AI assistant plugins.",
   "license": "AGPL-3.0-only",
   "repository": "https://github.com/triple-rainbow/1040kit-plugin",
   "engines": {

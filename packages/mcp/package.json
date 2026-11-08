@@ -1,8 +1,8 @@
 {
   "name": "1040kit",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
-  "description": "Free AI tax software that runs on your computer: the 1040kit MCP server for Claude Code and Codex. Prepares a US federal income tax return (Form 1040) locally.",
+  "description": "Self-employed tax software you talk to: the 1040kit MCP server for Claude Code and Codex. Prepares a US federal return (Form 1040, Schedule C and SE) on your computer.",
   "license": "AGPL-3.0-only",
   "author": "Triple Rainbow",
   "homepage": "https://1040kit.com",
