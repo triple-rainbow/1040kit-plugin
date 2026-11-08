@@ -17,7 +17,8 @@ Publishing uses [npm trusted publishing](https://docs.npmjs.com/trusted-publishe
    - Repository: `1040kit-plugin`
    - Workflow filename: `release.yml`
    - Environment: `npm`
-4. Save. Then, on the same page under **Publishing access**, pick **Require two-factor authentication and disallow tokens**, so only the workflow (or you with 2FA) can publish.
+4. Turn on **direct publishing** for this configuration. New trusted publishers can only stage a release by default, and `npm publish` from the workflow then fails with `403 ... OIDC permission denied for this action`.
+5. Save. Then, on the same page under **Publishing access**, pick **Require two-factor authentication and disallow tokens**, so only the workflow (or you with 2FA) can publish.
 
 On GitHub, create the `npm` environment (Settings → Environments → New environment, name `npm`). Optionally limit it to tags matching `v*` and add yourself as a required reviewer, so every publish waits for your approval.
 
@@ -34,4 +35,4 @@ On GitHub, create the `npm` environment (Settings → Environments → New envir
 
 3. The **Release** workflow checks that the tag matches the package version, runs every test, packs and publishes with provenance. Check the result at https://www.npmjs.com/package/1040kit.
 
-`0.0.1` on npm is a README-only placeholder; `0.1.0` is the first working release.
+`0.1.0` (2026-11-08) is the first working release; `0.0.1` was a README-only placeholder.

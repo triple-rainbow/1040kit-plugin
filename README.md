@@ -72,7 +72,7 @@ python3 -m http.server 4310 -d packages/mcp/.widget-harness
 
 Then open http://localhost:4310.
 
-Note: `1040kit@0.0.1` on npm today is a placeholder (README only, no server), so the `npx` install commands don't work yet.
+The released server is on npm as [`1040kit`](https://www.npmjs.com/package/1040kit) (what the plugins run with `npx -y 1040kit`). How releases are cut: [`docs/releasing.md`](docs/releasing.md).
 
 ## License
 
