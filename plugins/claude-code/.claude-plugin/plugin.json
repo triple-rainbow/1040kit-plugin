@@ -1,7 +1,7 @@
 {
   "name": "1040kit",
   "version": "0.1.0",
-  "description": "Free AI tax software: prepare your US federal return (W-2 and 1099 income) with your AI assistant. Your documents and your return never leave your computer.",
+  "description": "Self-employed tax software you talk to: prepare your US federal return (1099 and W-2 income, Schedule C) with your AI assistant. Your documents and your return never leave your computer.",
   "author": {
     "name": "Triple Rainbow",
     "url": "https://1040kit.com"
