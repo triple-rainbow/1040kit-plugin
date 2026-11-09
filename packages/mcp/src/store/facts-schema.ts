@@ -286,6 +286,20 @@ const business = z.strictObject({
     ])
     .optional(),
   vehicle: z.strictObject({ businessMiles: z.number().min(0) }).optional(),
+  operatedFromHome: z.boolean().optional(),
+  allInvestmentAtRisk: z.boolean().optional(),
+  vehicleUse: z
+    .strictObject({
+      placedInService: date.optional(),
+      businessMiles: z.number().int().min(0).optional(),
+      commutingMiles: z.number().int().min(0).optional(),
+      otherMiles: z.number().int().min(0).optional(),
+      availableOffDuty: z.boolean().optional(),
+      anotherVehicle: z.boolean().optional(),
+      hasEvidence: z.boolean().optional(),
+      evidenceWritten: z.boolean().optional(),
+    })
+    .optional(),
 });
 
 export const taxFactsSchema = z.strictObject({
@@ -424,6 +438,20 @@ export const identitySchema = z.strictObject({
               .string()
               .regex(/^\d{5}(?:-\d{4})?$/, 'ZIP or ZIP+4')
               .optional(),
+          })
+          .optional(),
+      })
+    )
+    .optional(),
+  /** Schedule C line E, by owner, when the business wasn't run from home. */
+  businesses: z
+    .partialRecord(
+      personId,
+      z.strictObject({
+        address: z
+          .strictObject({
+            street: z.string().max(120).optional(),
+            cityStateZip: z.string().max(120).optional(),
           })
           .optional(),
       })

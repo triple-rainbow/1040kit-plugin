@@ -221,6 +221,7 @@ test('Schedule C header items and line 30(a) are asked for each business', () =>
     ['principalBusinessCode', true],
     ['accountingMethod', true],
     ['startedOrAcquiredThisYear', true],
+    ['operatedFromHome', true],
     ['madePaymentsRequiring1099', true],
   ]);
   const answered = {
@@ -228,6 +229,7 @@ test('Schedule C header items and line 30(a) are asked for each business', () =>
     principalBusinessCode: '541430',
     accountingMethod: 'cash' as const,
     startedOrAcquiredThisYear: false,
+    operatedFromHome: true,
     madePaymentsRequiring1099: false,
   };
   assert.deepEqual(paths(facts(answered)), []);
@@ -247,4 +249,62 @@ test('Schedule C header items and line 30(a) are asked for each business', () =>
       ['homeOffice.homeSquareFeet', true],
     ]
   );
+});
+
+test('Schedule C Part IV is asked when car expenses are claimed; line 32 with a loss', () => {
+  const answered = {
+    materiallyParticipated: true,
+    principalBusinessCode: '541430',
+    accountingMethod: 'cash' as const,
+    startedOrAcquiredThisYear: false,
+    operatedFromHome: true,
+    madePaymentsRequiring1099: false,
+  };
+  const facts = (
+    biz: Partial<TaxFacts['businesses'][number]>,
+    income = 3000000
+  ) =>
+    makeFacts({
+      filingStatus: 'single',
+      nec1099s: [nec('nec_1', income)],
+      businesses: [
+        {
+          owner: 'taxpayer',
+          name: 'Design',
+          expenses: {},
+          ...answered,
+          ...biz,
+        },
+      ],
+    });
+  const paths = (f: TaxFacts) =>
+    requiredFacts(f)
+      .filter((m) => m.path.startsWith('businesses[taxpayer].'))
+      .map((m) => m.path.slice('businesses[taxpayer].'.length));
+  // Standard mileage: business miles come from vehicle.businessMiles.
+  assert.deepEqual(paths(facts({ vehicle: { businessMiles: 3000 } })), [
+    'vehicleUse.placedInService',
+    'vehicleUse.commutingMiles',
+    'vehicleUse.otherMiles',
+    'vehicleUse.availableOffDuty',
+    'vehicleUse.anotherVehicle',
+    'vehicleUse.hasEvidence',
+  ]);
+  // Actual expenses also ask the business miles; 47b only after a 47a yes.
+  const actual = paths(
+    facts({
+      expenses: { car_truck: 120000 },
+      vehicleUse: { hasEvidence: true },
+    })
+  );
+  assert.ok(actual.includes('vehicleUse.businessMiles'));
+  assert.ok(actual.includes('vehicleUse.evidenceWritten'));
+  assert.deepEqual(paths(facts({})), []);
+  // A loss asks line 32; "No" is out of scope (Form 6198).
+  const loss = facts({ expenses: { supplies: 5000000 } });
+  assert.deepEqual(paths(loss), ['allInvestmentAtRisk']);
+  const notAtRisk = computeReturn(
+    facts({ expenses: { supplies: 5000000 }, allInvestmentAtRisk: false })
+  );
+  assert.ok(notAtRisk.unsupported.some((u) => u.code === 'schedule_c_at_risk'));
 });

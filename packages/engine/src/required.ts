@@ -22,6 +22,7 @@ import type {
   PersonId,
   Screening,
   TaxFacts,
+  VehicleUse,
 } from './types.ts';
 
 type ScreeningKey =
@@ -453,6 +454,91 @@ export function requiredFactsFrom(
         'Schedule C, line J',
         38
       );
+    if (b.operatedFromHome === undefined)
+      ask(
+        'operatedFromHome',
+        `Did ${you} run the business from your home address?`,
+        'If the business has its own address, your business form asks for it.',
+        'Schedule C, line E',
+        37
+      );
+    if (node(`schC.netProfit.${o}`) < 0 && b.allInvestmentAtRisk === undefined)
+      ask(
+        'allInvestmentAtRisk',
+        `The business had a loss. Was all the money ${you} put into it ${you === 'you' ? 'your' : 'your spouse’s'} own, at risk of being lost?`,
+        'A loss counts in full only when all the money in the business was at risk. Most small businesses are.',
+        'Schedule C, line 32; Form 6198',
+        39
+      );
+    // Part IV, when car or truck expenses are claimed on line 9.
+    if (b.vehicle || (b.expenses.car_truck ?? 0) > 0) {
+      const v = b.vehicleUse ?? {};
+      const car = (
+        field: keyof VehicleUse,
+        question: string,
+        why: string,
+        line: string
+      ) => {
+        if (v[field] === undefined)
+          ask(
+            `vehicleUse.${field}`,
+            question,
+            why,
+            `Schedule C, line ${line}`,
+            41
+          );
+      };
+      car(
+        'placedInService',
+        'When did you start using the vehicle for the business?',
+        'Your business form asks for the date, when you claim car expenses.',
+        '43'
+      );
+      if (!b.vehicle)
+        car(
+          'businessMiles',
+          `How many miles did ${you} drive the vehicle for business in ${year}?`,
+          'Your business form asks for the business miles behind the car expenses.',
+          '44a'
+        );
+      car(
+        'commutingMiles',
+        'How many of its miles were commuting, between home and a regular workplace?',
+        'Commuting doesn’t count as business driving; the form asks for it separately.',
+        '44b'
+      );
+      car(
+        'otherMiles',
+        'How many other, personal miles did you drive it?',
+        'The form asks for business, commuting and other miles.',
+        '44c'
+      );
+      car(
+        'availableOffDuty',
+        'Was the vehicle available for personal use when you weren’t working?',
+        'The form asks this about any vehicle used for the business.',
+        '45'
+      );
+      car(
+        'anotherVehicle',
+        'Do you (or your spouse) have another vehicle for personal use?',
+        'The form asks this about any vehicle used for the business.',
+        '46'
+      );
+      car(
+        'hasEvidence',
+        'Do you have records of the business driving, such as a mileage log?',
+        'Car expenses need records to back them up.',
+        '47a'
+      );
+      if (v.hasEvidence === true)
+        car(
+          'evidenceWritten',
+          'Are those records written down, like a log or an app?',
+          'The form asks whether the records are written.',
+          '47b'
+        );
+    }
     if (
       b.homeOffice?.method === 'simplified' &&
       b.homeOffice.homeSquareFeet === undefined

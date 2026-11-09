@@ -65,6 +65,7 @@ function answerFor(path: string): Answer {
     'taxpayer.hasValidSsn': true,
     'taxpayer.canBeClaimedAsDependent': false,
     'taxpayer.blind': false,
+    'businesses[taxpayer].operatedFromHome': true,
     stateOfResidence: 'TX',
     'businesses[taxpayer].materiallyParticipated': true,
     'businesses[taxpayer].principalBusinessCode': '541430',

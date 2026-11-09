@@ -77,6 +77,16 @@
         },
         "vehicle": {
           "businessMiles": 3000
+        },
+        "operatedFromHome": true,
+        "vehicleUse": {
+          "placedInService": "2023-03-01",
+          "commutingMiles": 0,
+          "otherMiles": 4000,
+          "availableOffDuty": true,
+          "anotherVehicle": false,
+          "hasEvidence": true,
+          "evidenceWritten": true
         }
       }
     ],

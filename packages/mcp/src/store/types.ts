@@ -87,6 +87,10 @@ export interface Identity {
     zip?: string;
   };
   phone?: string;
+  /** Schedule C line E (business address), by owner, when not run from home. */
+  businesses?: Partial<
+    Record<PersonId, { address?: { street?: string; cityStateZip?: string } }>
+  >;
   /** Schedule E line 1a, by rental id. */
   rentals?: Record<
     string,
