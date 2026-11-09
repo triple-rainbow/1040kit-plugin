@@ -121,7 +121,9 @@ const call = async <T>(name: string, args: Record<string, unknown>) => {
     res = await client.callTool({ name, arguments: args });
   } catch (e) {
     // The server died: its stderr says why.
-    throw new Error(`${name} failed: ${String(e)}\n--- server stderr ---\n${stderr}`);
+    throw new Error(
+      `${name} failed: ${String(e)}\n--- server stderr ---\n${stderr}`
+    );
   }
   return res.structuredContent as T & {
     ok: boolean;
