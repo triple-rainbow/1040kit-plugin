@@ -113,6 +113,13 @@ export const OTHER_SITUATION = {
 
 export const SITUATIONS_PATH = 'situations';
 
+/** One field of a grouped question: its own fact path and answer type. */
+export interface GroupField {
+  path: string;
+  label: string;
+  answer: AnswerSpec;
+}
+
 export type PlannedAnswer =
   | AnswerSpec
   | {
@@ -120,6 +127,13 @@ export type PlannedAnswer =
       options: { path: string; label: string }[];
       other?: { path: string; label: string };
       noneLabel: string;
+    }
+  | {
+      /** Several facts about one thing (a dependent, a business), asked as one form. */
+      kind: 'group';
+      fields: GroupField[];
+      /** For new people: the same fields again for the next id ("{id}" in each path). */
+      addAnother?: { label: string; fields: GroupField[]; nextIndex: number };
     };
 
 export interface PlannedQuestion {
@@ -174,4 +188,152 @@ export function planQuestions(
       Number(b.blocking) - Number(a.blocking) ||
       a.priority - b.priority
   );
+}
+
+/** What a grouped question is for, by group kind. */
+const GROUP_WHY: Record<string, string> = {
+  dependent:
+    'These details decide which credits this person can bring, such as the child tax credit.',
+  business: 'Your business form (Schedule C) asks these about the business.',
+  vehicle:
+    'Your business form asks these when you claim car or truck expenses.',
+};
+
+/** Short labels for fields shown inside a group (the engine's question otherwise). */
+const FIELD_LABELS: Record<string, string> = {
+  dateOfBirth: 'Date of birth',
+  relationship: 'How they are related to you',
+  monthsLivedWithTaxpayer: 'Months they lived with you',
+  hasValidSsn: 'Has a Social Security number valid for work',
+  fullTimeStudent: 'Full-time student for at least 5 months',
+  grossIncome: 'Their income this year',
+  providedOverHalfOwnSupport: 'Paid more than half of their own support',
+  firstName: 'First name',
+  lastName: 'Last name',
+};
+
+/** The fields asked about a person the user is adding as a dependent. */
+function newPersonFields(id: string): GroupField[] {
+  const f = (path: string, key: string): GroupField => ({
+    path,
+    label: FIELD_LABELS[key]!,
+    answer: answerSpec(path),
+  });
+  const base = `dependents[${id}]`;
+  return [
+    {
+      path: `identity.dependents[${id}].firstName`,
+      label: FIELD_LABELS.firstName!,
+      answer: { kind: 'text' },
+    },
+    {
+      path: `identity.dependents[${id}].lastName`,
+      label: FIELD_LABELS.lastName!,
+      answer: { kind: 'text' },
+    },
+    f(`${base}.relationship`, 'relationship'),
+    f(`${base}.dateOfBirth`, 'dateOfBirth'),
+    f(`${base}.monthsLivedWithTaxpayer`, 'monthsLivedWithTaxpayer'),
+    f(`${base}.hasValidSsn`, 'hasValidSsn'),
+  ];
+}
+
+/**
+ * Compact forms: every open question about one dependent, one business's
+ * Schedule C, or its vehicle becomes one grouped question, and "who depends
+ * on you" becomes a form for each new person. Each field keeps its own fact
+ * path, so saving is the same profile_set call as before.
+ */
+export function groupQuestions(
+  planned: PlannedQuestion[],
+  ctx: {
+    dependentIds: string[];
+    names: Record<string, string | undefined>;
+  }
+): PlannedQuestion[] {
+  const groups = new Map<
+    string,
+    { title: string; members: PlannedQuestion[] }
+  >();
+  const out: PlannedQuestion[] = [];
+  const keyOf = (q: PlannedQuestion): [string, string] | null => {
+    let m = /^dependents\[([^\]]+)\]\./.exec(q.path);
+    if (m) {
+      const i = ctx.dependentIds.indexOf(m[1]!);
+      const name = ctx.names[m[1]!] ?? `your dependent #${i + 1}`;
+      return [`dependent:${m[1]}`, `About ${name}`];
+    }
+    m = /^businesses\[(taxpayer|spouse)\]\.vehicleUse\./.exec(q.path);
+    if (m)
+      return [
+        `vehicle:${m[1]}`,
+        m[1] === 'spouse'
+          ? 'Your spouse’s business vehicle'
+          : 'Your business vehicle',
+      ];
+    m = /^businesses\[(taxpayer|spouse)\]\./.exec(q.path);
+    if (m)
+      return [
+        `business:${m[1]}`,
+        m[1] === 'spouse' ? 'Your spouse’s business' : 'Your business',
+      ];
+    return null;
+  };
+  for (const q of planned) {
+    if (q.path === 'dependents' && q.answer.kind === 'open') {
+      const next = ctx.dependentIds.length + 1;
+      out.push({
+        ...q,
+        answer: {
+          kind: 'group',
+          fields: newPersonFields(`dependent_${next}`),
+          addAnother: {
+            label: 'Add another person',
+            fields: newPersonFields('{id}'),
+            nextIndex: next + 1,
+          },
+        },
+      });
+      continue;
+    }
+    const key = keyOf(q);
+    if (!key) {
+      out.push(q);
+      continue;
+    }
+    const g = groups.get(key[0]);
+    if (g) g.members.push(q);
+    else {
+      const entry = { title: key[1], members: [q] };
+      groups.set(key[0], entry);
+      out.push({ ...q, path: key[0] }); // placeholder, replaced below
+    }
+  }
+  return out.map((q) => {
+    const g = groups.get(q.path);
+    if (!g) return q;
+    if (g.members.length === 1) return g.members[0]!;
+    const first = g.members[0]!;
+    return {
+      path: q.path,
+      question: g.title,
+      why: GROUP_WHY[q.path.split(':')[0]!] ?? first.why,
+      blocking: g.members.some((m) => m.blocking),
+      priority: Math.min(...g.members.map((m) => m.priority)),
+      phase: first.phase,
+      answer: {
+        kind: 'group',
+        fields: g.members.map((m) => {
+          const suffix = m.path.slice(m.path.lastIndexOf('.') + 1);
+          return {
+            path: m.path,
+            label: q.path.startsWith('dependent:')
+              ? (FIELD_LABELS[suffix] ?? m.question)
+              : m.question,
+            answer: m.answer as AnswerSpec,
+          };
+        }),
+      },
+    };
+  });
 }

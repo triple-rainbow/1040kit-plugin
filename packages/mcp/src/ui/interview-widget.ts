@@ -101,6 +101,16 @@ const PAGE = `<!doctype html>
   .other-text { margin: 2px 0 4px 36px; max-width: calc(100% - 44px); width: 320px; }
   .other-hint { margin: 0 0 4px 36px; color: var(--bad); font-size: 13px; }
   .q.saved .check { pointer-events: none; }
+  .form { display: grid; gap: 12px; }
+  .row { display: grid; gap: 5px; }
+  .row > .label { font-size: 13px; color: var(--muted); }
+  .row.saved { opacity: .6; }
+  .row.saved .chip, .row.saved input { pointer-events: none; }
+  .person { display: grid; gap: 12px; padding-top: 10px; border-top: 1px solid var(--line); }
+  .person h2 { font-size: 13px; font-weight: 600; margin: 0; }
+  .add { font: inherit; font-size: 14px; justify-self: start; border: 1px dashed var(--line); background: transparent;
+         color: var(--accent); border-radius: 999px; padding: 6px 12px; cursor: pointer; }
+  .add:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 </style>
 </head>
 <body>
@@ -212,9 +222,45 @@ function multiselect(q, a) {
   return box;
 }
 
-function control(q) {
+// Label of every field inside a grouped question, for the message after saving.
+const fieldLabels = new Map(); // field path -> 'About Robin, Date of birth'
+
+// A compact form: several facts about one thing (a dependent, a business),
+// one row each. Every field saves to its own fact path. "Add another person"
+// repeats the fields for the next dependent id.
+function groupForm(q, a, card) {
+  const form = el('div', { class: 'form', role: 'group', 'aria-label': q.question });
+  const addRows = (fields, into, title) => {
+    for (const f of fields) {
+      fieldLabels.set(f.path, (title || q.question) + ', ' + f.label);
+      const sub = { path: f.path, question: f.label, answer: f.answer };
+      const row = el('div', { class: 'row' }, el('span', { class: 'label' }, f.label), control(sub));
+      row.dataset.path = f.path;
+      into.append(row);
+    }
+    if (card) card.dataset.paths = JSON.stringify([...JSON.parse(card.dataset.paths || '[]'), ...fields.map((f) => f.path)]);
+  };
+  addRows(a.fields, form);
+  if (a.addAnother) {
+    let n = a.addAnother.nextIndex;
+    const add = el('button', { class: 'add', type: 'button' }, '+ ' + a.addAnother.label);
+    add.addEventListener('click', () => {
+      const id = 'dependent_' + n++;
+      const title = 'Person ' + (n - a.addAnother.nextIndex + 1);
+      const person = el('div', { class: 'person' }, el('h2', {}, title));
+      addRows(a.addAnother.fields.map((f) => ({ ...f, path: f.path.split('{id}').join(id) })), person, title);
+      form.insertBefore(person, add);
+      person.querySelector('input, button')?.focus();
+    });
+    form.append(add);
+  }
+  return form;
+}
+
+function control(q, card) {
   const a = q.answer || { kind: 'open' };
   switch (a.kind) {
+    case 'group': return groupForm(q, a, card);
     case 'multiselect': return multiselect(q, a);
     case 'yesno': return chips(q, [{ value: true, label: 'Yes' }, { value: false, label: 'No' }]);
     case 'choice': return chips(q, a.options);
@@ -263,6 +309,7 @@ function render(result) {
   workspace = data.workspace;
   questions = data.questions || [];
   answers.clear();
+  fieldLabels.clear();
   if (data.done || questions.length === 0) {
     root.append(el('div', { class: 'done' }, 'All questions are answered. The assistant can calculate your return now.'));
     return;
@@ -278,10 +325,9 @@ function render(result) {
     const whyId = 'why-' + Math.random().toString(36).slice(2);
     const card = el('section', { class: 'q', 'aria-label': q.question, ...(q.why ? { 'aria-describedby': whyId } : {}) },
       el('p', {}, q.question),
-      ...(q.why ? [el('p', { class: 'why', id: whyId }, q.why)] : []),
-      control(q),
-      el('p', { class: 'err', hidden: '' }));
+      ...(q.why ? [el('p', { class: 'why', id: whyId }, q.why)] : []));
     card.dataset.path = q.path;
+    card.append(control(q, card), el('p', { class: 'err', hidden: '' }));
     if (q.answer && q.answer.kind === 'multiselect')
       card.dataset.paths = JSON.stringify([...q.answer.options.map((o) => o.path), ...(q.answer.other ? [q.answer.other.path] : [])]);
     root.append(card);
@@ -324,24 +370,39 @@ async function save() {
     saveBtn.disabled = false;
     return;
   }
-  const rejected = new Map((env.rejected || []).map((r) => [questionPathFor(r.path), r.reason || 'Not accepted']));
-  for (const [path, why] of rejected) {
+  // Rejections come back per fact path; show each on its card.
+  const rejectedPaths = new Map((env.rejected || []).map((r) => [r.path, r.reason || 'Not accepted']));
+  const rejected = new Map();
+  for (const [path, why] of rejectedPaths) {
+    rejected.set(questionPathFor(path), why);
     const c = cardFor(path);
-    if (c) { const e = c.querySelector('.err'); e.textContent = why; e.hidden = false; }
+    if (c) { const e = c.querySelector('.err'); e.textContent = (fieldLabels.get(path) ? fieldLabels.get(path) + ': ' : '') + why; e.hidden = false; }
   }
-  const saved = entries.filter(([p]) => !rejected.has(p));
+  const saved = entries.filter(([p, a]) => !(a.sets ? a.sets.some((x) => rejectedPaths.has(x.path)) : rejectedPaths.has(p)));
   for (const [p] of saved) {
     answers.delete(p);
     const c = cardFor(p);
-    if (c && !c.classList.contains('saved')) {
-      c.classList.add('saved');
-      for (const i of c.querySelectorAll('button, input')) i.setAttribute('disabled', '');
-      c.append(el('p', { class: 'ok' }, 'Saved'));
+    if (!c || c.classList.contains('saved')) continue;
+    const row = [...c.querySelectorAll('.row')].find((r) => r.dataset.path === p);
+    if (row) {
+      // A form: mark the row; the card is done when every row is.
+      row.classList.add('saved');
+      for (const i of row.querySelectorAll('button, input')) i.setAttribute('disabled', '');
+      if ([...c.querySelectorAll('.row')].every((r) => r.classList.contains('saved'))) {
+        c.classList.add('saved');
+        for (const i of c.querySelectorAll('button')) i.setAttribute('disabled', '');
+        c.append(el('p', { class: 'ok' }, 'Saved'));
+      }
+      continue;
     }
+    c.classList.add('saved');
+    for (const i of c.querySelectorAll('button, input')) i.setAttribute('disabled', '');
+    c.append(el('p', { class: 'ok' }, 'Saved'));
   }
   const lines = saved.map(([p, a]) => {
     const q = questions.find((x) => x.path === p);
     if (q && q.answer && q.answer.kind === 'multiselect') return '- Situations that apply: ' + a.label;
+    if (fieldLabels.has(p)) return '- ' + fieldLabels.get(p) + ': ' + a.label;
     return '- ' + (q ? q.question : p) + ' ' + a.label;
   });
   statusEl.textContent = saved.length ? 'Saved ' + saved.length + '.' : '';

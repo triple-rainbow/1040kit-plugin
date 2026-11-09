@@ -162,10 +162,22 @@ test('W-2 + 1099-NEC → complete return → forms and both filing packages', as
     assert.ok(next.ok, JSON.stringify(next));
     if (next.done) break;
     phases.push(next.phase);
-    const blocking = next.questions.filter(
-      (q) => q.blocking && q.answer.kind !== 'multiselect'
+    const blocking = next.questions.flatMap((q): { path: string }[] =>
+      q.answer.kind === 'group'
+        ? q.answer.fields.map((f) => ({ ...f, blocking: q.blocking }))
+        : q.blocking && q.answer.kind !== 'multiselect'
+          ? [q]
+          : []
     );
     const set = next.questions.flatMap((q) => {
+      // A compact form: answer each of its fields.
+      if (q.answer.kind === 'group')
+        return q.answer.fields.flatMap((f) => {
+          const value = answerFor(f.path);
+          return value === undefined
+            ? []
+            : [{ path: f.path, value, source: 'user' as const }];
+        });
       // "Check all that apply": none apply, so every option is false.
       if (q.answer.kind === 'multiselect')
         return [
