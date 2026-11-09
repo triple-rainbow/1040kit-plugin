@@ -257,6 +257,21 @@ const business = z.strictObject({
     .string()
     .regex(/^\d{6}$/, 'a 6-digit NAICS code')
     .optional(),
+  accountingMethod: z
+    .enum(['cash', 'accrual', 'other'])
+    .meta({
+      labels: {
+        cash: 'Cash (when paid)',
+        accrual: 'Accrual (when billed)',
+        other: 'Other method',
+      },
+    })
+    .optional(),
+  accountingMethodOther: z.string().min(1).max(60).optional(),
+  materiallyParticipated: z.boolean().optional(),
+  startedOrAcquiredThisYear: z.boolean().optional(),
+  madePaymentsRequiring1099: z.boolean().optional(),
+  filedRequired1099s: z.boolean().optional(),
   grossReceiptsOther: nonNegCents.optional(),
   returnsAllowances: nonNegCents.optional(),
   expenses: z.partialRecord(scheduleCExpense, nonNegCents),
@@ -265,6 +280,7 @@ const business = z.strictObject({
       z.strictObject({
         method: z.literal('simplified'),
         squareFeet: z.number().min(0),
+        homeSquareFeet: z.number().positive().optional(),
       }),
       homeOfficeActual,
     ])

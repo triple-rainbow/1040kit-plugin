@@ -224,7 +224,7 @@ export function scopeItems(
     0
   );
   // i1040se "Exception for Certain Rental Real Estate Activities": no Form 8582 when rental real
-  // estate is the only passive activity (a Schedule C is assumed to be materially participated in),
+  // estate is the only passive activity (a Schedule C with line G "No" is flagged as schedule_c_passive),
   // there is no prior-year unallowed loss, and any overall loss is <= $25,000 with active
   // participation and MAGI <= $100,000.
   const priorLoss = realEstate.some((x) => x.r.priorYearUnallowedLoss === true);
@@ -308,6 +308,14 @@ export function scopeItems(
         code: 'multiple_schedule_c',
         message:
           'More than one Schedule C business for the same person is not supported yet.',
+        deferredTo: 'v2',
+      });
+    }
+    if (biz.some((b) => b.materiallyParticipated === false)) {
+      push(out, {
+        code: 'schedule_c_passive',
+        message:
+          'A business you did not materially participate in (Schedule C line G "No") is a passive activity with its own loss limits and Net Investment Income Tax rules (Pub. 925, Form 8582), which are not supported yet.',
         deferredTo: 'v2',
       });
     }

@@ -336,3 +336,14 @@ test('a yes to "someone depends on you" asks who, even when single', () => {
   assert.ok(!none.includes('dependents'));
   assert.ok(!none.includes('screening.hasDependents'));
 });
+
+test('a Schedule C without material participation (line G "No") is out of scope', () => {
+  const f = (materiallyParticipated?: boolean) =>
+    makeFacts({
+      nec1099s: [nec('nec_1', 3000000)],
+      businesses: [{ owner: 'taxpayer', expenses: {}, materiallyParticipated }],
+    });
+  assert.ok(codes(f(false)).includes('schedule_c_passive'));
+  assert.ok(!codes(f(true)).includes('schedule_c_passive'));
+  assert.ok(!codes(f()).includes('schedule_c_passive'));
+});

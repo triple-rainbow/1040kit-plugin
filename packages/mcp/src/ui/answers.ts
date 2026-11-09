@@ -88,7 +88,7 @@ export function answerSpec(path: string): AnswerSpec {
   const at = schemaAt(path);
   if (!at) return { kind: 'open' };
   const meta = (at.meta?.() ?? unwrap(at).meta?.()) as
-    { answer?: string } | undefined;
+    { answer?: string; labels?: Record<string, string> } | undefined;
   if (meta?.answer === 'amount') return { kind: 'amount' };
   if (meta?.answer === 'date') return { kind: 'date' };
   const s = unwrap(at);
@@ -102,7 +102,7 @@ export function answerSpec(path: string): AnswerSpec {
         kind: 'choice',
         options: values.map((v) => ({
           value: v,
-          label: LABELS[v] ?? humanize(v),
+          label: meta?.labels?.[v] ?? LABELS[v] ?? humanize(v),
         })),
       };
     }

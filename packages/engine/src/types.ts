@@ -173,13 +173,34 @@ export interface Business {
   /** One Schedule C per person in v1. */
   owner: PersonId;
   name?: string;
+  /** Schedule C line B: the 6-digit code from the Schedule C instructions. */
   principalBusinessCode?: string;
+  /** Line F. `accountingMethodOther` describes an `other` method. */
+  accountingMethod?: 'cash' | 'accrual' | 'other';
+  accountingMethodOther?: string;
+  /**
+   * Line G. `false` makes the business a passive activity (Pub. 925), which
+   * v1 does not compute: it is flagged out of scope.
+   */
+  materiallyParticipated?: boolean;
+  /** Line H: started or acquired during the tax year. */
+  startedOrAcquiredThisYear?: boolean;
+  /** Line I: made payments that require filing Form(s) 1099. */
+  madePaymentsRequiring1099?: boolean;
+  /** Line J: filed (or will file) those Forms 1099; asked only when line I is yes. */
+  filedRequired1099s?: boolean;
   /** Receipts not reported on any 1099. */
   grossReceiptsOther?: Cents;
   returnsAllowances?: Cents;
   /** `meals` is the full amount paid; the engine applies the 50% limit. */
   expenses: Partial<Record<ScheduleCExpense, Cents>>;
-  homeOffice?: { method: 'simplified'; squareFeet: number } | HomeOfficeActual;
+  /**
+   * Simplified method: `squareFeet` is the business area (line 30(b)),
+   * `homeSquareFeet` the whole home (line 30(a), printed only).
+   */
+  homeOffice?:
+    | { method: 'simplified'; squareFeet: number; homeSquareFeet?: number }
+    | HomeOfficeActual;
   /** Standard mileage; when present, `expenses.car_truck` is ignored. */
   vehicle?: { businessMiles: number };
 }

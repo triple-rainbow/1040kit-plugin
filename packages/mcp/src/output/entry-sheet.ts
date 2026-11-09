@@ -1,4 +1,4 @@
-import type { FormId, ReturnResult } from '@1040kit/engine';
+import type { Business, FormId, ReturnResult } from '@1040kit/engine';
 
 import { compareLines, FORM_ORDER } from '../calc.ts';
 import type { StoreData } from '../store/types.ts';
@@ -226,6 +226,33 @@ export function entrySheetMarkdown(
   return out.join('\n');
 }
 
+/** Schedule C items F-J, in the words of the form, as fill.ts checks them. */
+function schCHeaderEntries(biz: Business): string[] {
+  const out: string[] = [];
+  const yn = (v: boolean) => `**${v ? 'Yes' : 'No'}**`;
+  if (biz.accountingMethod)
+    out.push(
+      `Line F, accounting method: check **${{ cash: 'Cash', accrual: 'Accrual', other: 'Other' }[biz.accountingMethod]}**${biz.accountingMethod === 'other' && biz.accountingMethodOther ? `, specify "${biz.accountingMethodOther}"` : ''}`
+    );
+  if (biz.materiallyParticipated !== undefined)
+    out.push(
+      `Line G, materially participated: check ${yn(biz.materiallyParticipated)}`
+    );
+  if (biz.startedOrAcquiredThisYear)
+    out.push(
+      'Line H, started or acquired this business this year: check the box'
+    );
+  if (biz.madePaymentsRequiring1099 !== undefined)
+    out.push(
+      `Line I, payments that require Form(s) 1099: check ${yn(biz.madePaymentsRequiring1099)}`
+    );
+  if (biz.madePaymentsRequiring1099 && biz.filedRequired1099s !== undefined)
+    out.push(
+      `Line J, filed the required Form(s) 1099: check ${yn(biz.filedRequired1099s)}`
+    );
+  return out;
+}
+
 /**
  * The non-amount entries each form prints, the same ones fill.ts writes:
  * names, codes, square feet, descriptions and yes/no boxes.
@@ -249,11 +276,19 @@ function formTextEntries(
       add(form, `Line A, principal business or profession: ${principal}`);
     if (biz.principalBusinessCode)
       add(form, `Line B, business code: ${biz.principalBusinessCode}`);
-    if (biz.homeOffice?.method === 'simplified')
+    for (const e of schCHeaderEntries(biz)) add(form, e);
+    if (biz.homeOffice?.method === 'simplified') {
+      const sq = (n: number) => `${n.toLocaleString('en-US')} square feet`;
+      if (biz.homeOffice.homeSquareFeet !== undefined)
+        add(
+          form,
+          `Line 30(a), simplified method: total area of your home ${sq(biz.homeOffice.homeSquareFeet)}`
+        );
       add(
         form,
-        `Line 30, simplified method: business use of your home ${biz.homeOffice.squareFeet.toLocaleString('en-US')} square feet`
+        `Line 30(b), simplified method: part of your home used for business ${sq(biz.homeOffice.squareFeet)}`
       );
+    }
     const other = formLineValues(result, form);
     if (other.get('48')?.value || other.get('27b')?.value)
       add(

@@ -66,6 +66,11 @@ function answerFor(path: string): Answer {
     'taxpayer.canBeClaimedAsDependent': false,
     'taxpayer.blind': false,
     stateOfResidence: 'TX',
+    'businesses[taxpayer].materiallyParticipated': true,
+    'businesses[taxpayer].principalBusinessCode': '541430',
+    'businesses[taxpayer].accountingMethod': 'cash',
+    'businesses[taxpayer].startedOrAcquiredThisYear': false,
+    'businesses[taxpayer].madePaymentsRequiring1099': false,
   };
   if (path in fixed) return fixed[path];
   if (/^businesses\[taxpayer\]$/.test(path))

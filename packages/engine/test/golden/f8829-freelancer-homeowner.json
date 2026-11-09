@@ -30,6 +30,12 @@
       {
         "owner": "taxpayer",
         "name": "Example Design",
+        "principalBusinessCode": "541430",
+        "accountingMethod": "cash",
+        "materiallyParticipated": true,
+        "startedOrAcquiredThisYear": false,
+        "madePaymentsRequiring1099": true,
+        "filedRequired1099s": true,
         "expenses": {
           "supplies": 500000
         },
