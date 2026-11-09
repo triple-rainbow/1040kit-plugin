@@ -253,9 +253,11 @@ const rental = z.strictObject({
 const business = z.strictObject({
   owner: personId,
   name: z.string().max(120).optional(),
+  // Answered in chat, where the assistant can suggest a code from the IRS list.
   principalBusinessCode: z
     .string()
     .regex(/^\d{6}$/, 'a 6-digit NAICS code')
+    .meta({ answer: 'open' })
     .optional(),
   accountingMethod: z
     .enum(['cash', 'accrual', 'other'])
@@ -277,15 +279,38 @@ const business = z.strictObject({
   expenses: z.partialRecord(scheduleCExpense, nonNegCents),
   homeOffice: z
     .union([
-      z.strictObject({
-        method: z.literal('simplified'),
-        squareFeet: z.number().min(0),
-        homeSquareFeet: z.number().positive().optional(),
-      }),
+      z
+        .strictObject({
+          method: z.literal('simplified'),
+          squareFeet: z.number().min(0),
+          homeSquareFeet: z.number().positive().optional(),
+        })
+        .refine(
+          (h) =>
+            h.homeSquareFeet === undefined || h.homeSquareFeet >= h.squareFeet,
+          {
+            message: 'the whole home can’t be smaller than the office',
+            path: ['homeSquareFeet'],
+          }
+        ),
       homeOfficeActual,
     ])
     .optional(),
   vehicle: z.strictObject({ businessMiles: z.number().min(0) }).optional(),
+  operatedFromHome: z.boolean().optional(),
+  allInvestmentAtRisk: z.boolean().optional(),
+  vehicleUse: z
+    .strictObject({
+      placedInService: date.optional(),
+      businessMiles: z.number().int().min(0).optional(),
+      commutingMiles: z.number().int().min(0).optional(),
+      otherMiles: z.number().int().min(0).optional(),
+      availableOffDuty: z.boolean().optional(),
+      anotherVehicle: z.boolean().optional(),
+      hasEvidence: z.boolean().optional(),
+      evidenceWritten: z.boolean().optional(),
+    })
+    .optional(),
 });
 
 export const taxFactsSchema = z.strictObject({
@@ -424,6 +449,20 @@ export const identitySchema = z.strictObject({
               .string()
               .regex(/^\d{5}(?:-\d{4})?$/, 'ZIP or ZIP+4')
               .optional(),
+          })
+          .optional(),
+      })
+    )
+    .optional(),
+  /** Schedule C line E, by owner, when the business wasn't run from home. */
+  businesses: z
+    .partialRecord(
+      personId,
+      z.strictObject({
+        address: z
+          .strictObject({
+            street: z.string().max(120).optional(),
+            cityStateZip: z.string().max(120).optional(),
           })
           .optional(),
       })

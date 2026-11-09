@@ -12,6 +12,7 @@
  * confirmed: true, which records the confirmation for that same review.
  * forms_fill and filing_prepare need a confirmed review of the current return.
  */
+import { ownedOnReturn } from '@1040kit/engine';
 import { z } from 'zod';
 
 import { computeAndCache, drivers, engineCall, reviewHash } from '../calc.ts';
@@ -166,15 +167,33 @@ export const handler = defineTool(inputSchema, async (input, deps) => {
     const f = data.facts;
     const count = (n: number, one: string) =>
       n === 0 ? [] : [`${n} ${one}${n === 1 ? '' : 's'}`];
+    // Only the forms on this return: a spouse's are left off a non-joint return.
+    const on = <T extends { owner: 'taxpayer' | 'spouse' }>(xs: T[]) =>
+      ownedOnReturn(f, xs).length;
     const formsOnReturn = [
-      ...count(f.w2s.length, 'W-2'),
-      ...count(f.int1099s.length, '1099-INT'),
-      ...count(f.div1099s.length, '1099-DIV'),
-      ...count(f.nec1099s.length, '1099-NEC'),
-      ...count(f.misc1099s.length, '1099-MISC'),
-      ...count(f.k1099s.length, '1099-K'),
-      ...count(f.e1098s.length, '1098-E'),
+      ...count(on(f.w2s), 'W-2'),
+      ...count(on(f.int1099s), '1099-INT'),
+      ...count(on(f.div1099s), '1099-DIV'),
+      ...count(on(f.nec1099s), '1099-NEC'),
+      ...count(on(f.misc1099s), '1099-MISC'),
+      ...count(on(f.k1099s), '1099-K'),
+      ...count(on(f.e1098s), '1098-E'),
     ];
+    const lists = [
+      f.w2s,
+      f.int1099s,
+      f.div1099s,
+      f.nec1099s,
+      f.misc1099s,
+      f.k1099s,
+      f.e1098s,
+    ] as { owner: 'taxpayer' | 'spouse' }[][];
+    const leftOut = lists.reduce((n, xs) => n + xs.length - on(xs), 0);
+    if (leftOut > 0)
+      attention.push({
+        code: 'forms:spouse_left_out',
+        message: `${leftOut} of your spouse’s tax form${leftOut === 1 ? ' is' : 's are'} on file but left off this return, because it isn’t a joint return. Make sure the filing status is right.`,
+      });
     const dependents =
       f.dependents.length === 0
         ? 'no dependents'

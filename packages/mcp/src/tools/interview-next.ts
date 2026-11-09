@@ -6,6 +6,7 @@ import { requireAcknowledgment } from '../output/acknowledgment.ts';
 import { isAnswered } from '../store/profile.ts';
 import { openStore } from '../store/workspace.ts';
 import {
+  groupQuestions,
   PHASES,
   planQuestions,
   type Phase,
@@ -67,7 +68,18 @@ export const handler = defineTool(inputSchema, async (input, deps) => {
     : planned.some((q) => q.phase === 'deductions')
       ? 'deductions'
       : 'income';
-  const inPhase = planned.filter((q) => q.phase === phase);
+  const inPhase = groupQuestions(
+    planned.filter((q) => q.phase === phase),
+    {
+      dependentIds: data.facts.dependents.map((d) => d.id),
+      names: Object.fromEntries(
+        Object.entries(data.identity.dependents ?? {}).map(([id, n]) => [
+          id,
+          n.firstName?.trim() || undefined,
+        ])
+      ),
+    }
+  );
   return {
     workspace: store.workspace,
     phase,
@@ -75,7 +87,7 @@ export const handler = defineTool(inputSchema, async (input, deps) => {
     phaseIntro: PHASES[phase].intro,
     questions: inPhase.slice(0, input.limit),
     remaining: inPhase.length,
-    remainingAfterThisPhase: planned.length - inPhase.length,
+    remainingAfterThisPhase: planned.filter((q) => q.phase !== phase).length,
     done: false,
   };
 });
@@ -84,7 +96,7 @@ export const definition: ToolDefinition = {
   name: 'interview_next',
   title: 'Next interview questions',
   description:
-    'The fewest questions still needed, one phase at a time: `income` (you, your household, your income) first, then `deductions` (deductions and credits). When a new phase starts, tell the user its `phaseIntro` in one sentence. Each question has a plain-English `why` to show the user and, where there is one, the IRS `cite` to quote if they ask for the rule. Each question has an `answer` type: yesno, choice (options), amount (dollars, record as cents), date, number, text, open, or multiselect. A multiselect lists situations to check: record every option `path` with profile_set, true for the ones the user picks and false for the rest; `other.path` takes a list of short descriptions ([] when none). Hosts that support MCP Apps show the questions as a card (chips, check boxes, text boxes) that saves the answers itself and then posts what it saved: in that case introduce the card in one line and do not list or repeat its questions. Otherwise ask in plain English (for a multiselect, show the list and ask which apply), record with profile_set, and call again until `done` is true.',
+    'The fewest questions still needed, one phase at a time: `income` (you, your household, your income) first, then `deductions` (deductions and credits). When a new phase starts, tell the user its `phaseIntro` in one sentence. Each question has a plain-English `why` to show the user and, where there is one, the IRS `cite` to quote if they ask for the rule. Each question has an `answer` type: yesno, choice (options), amount (dollars, record as cents), date, number, text, open, multiselect, or group. A group is several facts about one thing (a dependent, a business, a vehicle) asked as one form: ask all its `fields` in one message and record each field’s `path`; when it has `addAnother`, the user may add more people with the same fields (replace "{id}" with dependent_<nextIndex>, then the next). A multiselect lists situations to check: record every option `path` with profile_set, true for the ones the user picks and false for the rest; `other.path` takes a list of short descriptions ([] when none). Hosts that support MCP Apps show the questions as a card (chips, check boxes, text boxes) that saves the answers itself and then posts what it saved: in that case introduce the card in one line and do not list or repeat its questions. Otherwise ask in plain English (for a multiselect, show the list and ask which apply), record with profile_set, and call again until `done` is true.',
   inputSchema,
   ui: { resourceUri: INTERVIEW_WIDGET_URI },
   handler,

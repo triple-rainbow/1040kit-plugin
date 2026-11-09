@@ -1,6 +1,7 @@
 import type { ReturnResult } from '@1040kit/engine';
 
 import { factsHash, reviewHash } from '../calc.ts';
+import { SERVER_VERSION } from '../version.ts';
 import { ToolError } from '../envelope.ts';
 import type { StoreData } from '../store/types.ts';
 
@@ -9,6 +10,14 @@ export function readyResult(data: StoreData): ReturnResult {
   const last = data.lastCalc;
   if (!last) {
     throw new ToolError('RETURN_INCOMPLETE', 'Run calc_return first.');
+  }
+  // Computed by an older 1040kit: newer versions may ask more questions
+  // (Schedule C items, for example) or compute differently.
+  if (last.version !== SERVER_VERSION) {
+    throw new ToolError(
+      'RETURN_INCOMPLETE',
+      '1040kit was updated since this return was last computed. Run calc_return again: it may have new questions, then return_review again with the user.'
+    );
   }
   if (last.factsHash !== factsHash(data.facts)) {
     throw new ToolError(

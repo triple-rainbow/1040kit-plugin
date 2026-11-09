@@ -1,5 +1,6 @@
 import { writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import { ownedOnReturn } from '@1040kit/engine';
 import { z } from 'zod';
 
 import { ATTACHMENT_SEQUENCE, FORM_ORDER } from '../calc.ts';
@@ -59,7 +60,7 @@ export const handler = defineTool(inputSchema, async (input, deps) => {
         state,
         refundOrOwed: result.summary.refundOrOwed,
         mfj: data.facts.filingStatus === 'mfj',
-        w2Count: data.facts.w2s.length,
+        w2Count: ownedOnReturn(data.facts, data.facts.w2s).length,
         now: deps.now(),
         attachments: FORM_ORDER.filter(
           (f) => f !== 'f1040' && result.forms.includes(f)

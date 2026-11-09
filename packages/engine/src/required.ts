@@ -22,6 +22,7 @@ import type {
   PersonId,
   Screening,
   TaxFacts,
+  VehicleUse,
 } from './types.ts';
 
 type ScreeningKey =
@@ -227,8 +228,7 @@ export function requiredFactsFrom(
   ) {
     add({
       path: 'dependents',
-      question:
-        'Who lives with you or depends on you? For each: name, relationship, date of birth, months with you, and whether they have a valid SSN.',
+      question: 'Who lives with you or depends on you?',
       why: 'Each dependent can bring a credit; the relationship and age decide which one.',
       blocking: true,
       priority: 19,
@@ -334,6 +334,8 @@ export function requiredFactsFrom(
     const person = o === 'taxpayer' ? facts.taxpayer : facts.spouse;
     return (
       (o === 'taxpayer' && childUnder17) ||
+      // Asked up front with the dependents, so it doesn't need a round of its own.
+      facts.screening?.hasDependents === true ||
       eic.possible ||
       (facts.obbba?.qualifiedTips?.[o] ?? 0) > 0 ||
       (facts.obbba?.qualifiedOvertime?.[o] ?? 0) > 0 ||
@@ -382,6 +384,13 @@ export function requiredFactsFrom(
     if (!b) continue;
     const base = `businesses[${o}]`;
     const you = who(o);
+    // On a joint return both businesses get the same questions: name each.
+    const theBiz = b.name
+      ? `“${b.name}”`
+      : o === 'spouse'
+        ? 'your spouse’s business'
+        : 'your business';
+    const mfj = statusOf(facts) === 'mfj';
     const ask = (
       field: string,
       question: string,
@@ -400,7 +409,7 @@ export function requiredFactsFrom(
     if (b.materiallyParticipated === undefined)
       ask(
         'materiallyParticipated',
-        `Did ${you} work in the business regularly and in a real way this year, for example over 500 hours or doing nearly all the work?`,
+        `Did ${you}${mfj ? (o === 'spouse' ? ' (with your help)' : ' (with your spouse’s help)') : ''} work in ${theBiz} regularly, e.g. over 500 hours or nearly all the work?`,
         'Most people who run their own business do. If not, the business counts as passive, with loss rules 1040kit can’t handle yet.',
         'Schedule C, line G; Pub. 925, Material Participation',
         34
@@ -408,7 +417,7 @@ export function requiredFactsFrom(
     if (!b.principalBusinessCode)
       ask(
         'principalBusinessCode',
-        'Which 6-digit IRS code best describes the business? I can suggest one from the IRS list.',
+        `Which 6-digit IRS business code fits ${theBiz}? If you don’t know it, ask and I’ll suggest one.`,
         'Your business form asks for a code that names the main kind of work the business does.',
         'Schedule C, line B; Schedule C instructions, Principal Business or Professional Activity Codes',
         35
@@ -416,7 +425,7 @@ export function requiredFactsFrom(
     if (b.accountingMethod === undefined)
       ask(
         'accountingMethod',
-        'Do you count income when you’re paid and expenses when you pay them (cash), or when they’re billed (accrual)?',
+        `Does ${theBiz} count income and expenses when paid (cash) or when billed (accrual)?`,
         'Your business form asks which method the business uses. Most freelancers use cash.',
         'Schedule C, line F; Pub. 334, Accounting Methods',
         36
@@ -432,7 +441,7 @@ export function requiredFactsFrom(
     if (b.startedOrAcquiredThisYear === undefined)
       ask(
         'startedOrAcquiredThisYear',
-        `Did ${you} start or buy this business during ${year}?`,
+        `Did ${you} start or buy ${theBiz} during ${year}?`,
         'Your business form has a box for a business that is new this year.',
         'Schedule C, line H',
         37
@@ -440,7 +449,7 @@ export function requiredFactsFrom(
     if (b.madePaymentsRequiring1099 === undefined)
       ask(
         'madePaymentsRequiring1099',
-        'Did the business make payments this year that require filing a Form 1099, such as paying a contractor?',
+        `Did ${theBiz} make payments this year that require a Form 1099, such as paying a contractor?`,
         'Your business form asks whether the business had to send any 1099s.',
         'Schedule C, line I; General Instructions for Certain Information Returns',
         38
@@ -448,18 +457,104 @@ export function requiredFactsFrom(
     else if (b.madePaymentsRequiring1099 && b.filedRequired1099s === undefined)
       ask(
         'filedRequired1099s',
-        'Did you file, or will you file, all the Forms 1099 the business is required to send?',
+        `Did ${theBiz} file, or will it file, all the Forms 1099 it has to send?`,
         'Your business form asks this after a Yes on the 1099 question.',
         'Schedule C, line J',
         38
       );
+    if (b.operatedFromHome === undefined)
+      ask(
+        'operatedFromHome',
+        `Did ${you} run ${theBiz} from your home address?`,
+        'If the business has its own address, your business form asks for it.',
+        'Schedule C, line E',
+        37
+      );
+    if (node(`schC.netProfit.${o}`) < 0 && b.allInvestmentAtRisk === undefined)
+      ask(
+        'allInvestmentAtRisk',
+        `The business had a loss. Was all the money ${you} put into it ${you === 'you' ? 'your' : 'your spouse’s'} own, at risk of being lost?`,
+        'A loss counts in full only when all the money in the business was at risk. Most small businesses are.',
+        'Schedule C, line 32; Form 6198',
+        39
+      );
+    // Part IV, when car or truck expenses are claimed on line 9.
+    if (b.vehicle || (b.expenses.car_truck ?? 0) > 0) {
+      const v = b.vehicleUse ?? {};
+      const car = (
+        field: keyof VehicleUse,
+        question: string,
+        why: string,
+        line: string
+      ) => {
+        if (v[field] === undefined)
+          ask(
+            `vehicleUse.${field}`,
+            question,
+            why,
+            `Schedule C, line ${line}`,
+            41
+          );
+      };
+      car(
+        'placedInService',
+        `When did you start using the vehicle for ${theBiz}?`,
+        'Your business form asks for the date, when you claim car expenses.',
+        '43'
+      );
+      if (!b.vehicle)
+        car(
+          'businessMiles',
+          `How many miles did ${you} drive the vehicle for business in ${year}?`,
+          'Your business form asks for the business miles behind the car expenses.',
+          '44a'
+        );
+      car(
+        'commutingMiles',
+        'How many of its miles were commuting, between home and a regular workplace?',
+        'Commuting doesn’t count as business driving; the form asks for it separately.',
+        '44b'
+      );
+      car(
+        'otherMiles',
+        'How many other, personal miles did you drive it?',
+        'The form asks for business, commuting and other miles.',
+        '44c'
+      );
+      car(
+        'availableOffDuty',
+        'Was the vehicle available for personal use when you weren’t working?',
+        'The form asks this about any vehicle used for the business.',
+        '45'
+      );
+      car(
+        'anotherVehicle',
+        'Do you (or your spouse) have another vehicle for personal use?',
+        'The form asks this about any vehicle used for the business.',
+        '46'
+      );
+      car(
+        'hasEvidence',
+        'Do you have records of the business driving, such as a mileage log?',
+        'Car expenses need records to back them up.',
+        '47a'
+      );
+      // Asked with 47a (ignored after a No), so it doesn't need a round of its own.
+      if (v.hasEvidence !== false)
+        car(
+          'evidenceWritten',
+          'If you have records, are they written down, like a log or an app?',
+          'The form asks whether the records are written.',
+          '47b'
+        );
+    }
     if (
       b.homeOffice?.method === 'simplified' &&
       b.homeOffice.homeSquareFeet === undefined
     )
       ask(
         'homeOffice.homeSquareFeet',
-        'How many square feet is your whole home?',
+        `How many square feet is the whole home where ${theBiz} has its office?`,
         'The simplified home office method asks for the size of your whole home next to the office.',
         'Schedule C, line 30(a)',
         39

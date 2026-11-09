@@ -8,6 +8,7 @@
 import { readFile } from 'node:fs/promises';
 import {
   classifyDependent,
+  ownedOnReturn,
   getParams,
   type Dependent,
   type DependentCredit,
@@ -251,7 +252,8 @@ export async function fillReturn(
 
     if (formId === 'f1040') fill1040(f, map, data, result, handwrite, year);
     if (formId === 'schB') fillSchB(f, map, data, handwrite);
-    if (formId.startsWith('schC')) fillSchC(f, map, data, owner, values);
+    if (formId.startsWith('schC'))
+      fillSchC(f, map, data, owner, values, handwrite);
     if (formId === 'f8995') fill8995(f, map, data, result);
     if (formId === 'sch8812') fill8812(f, map, result);
     if (formId === 'schE') fillSchE(f, map, data, values, handwrite, year);
@@ -489,11 +491,15 @@ export function schBRows(
   return [
     ...rows(
       'interest',
-      data.facts.int1099s.map((x) => ({ id: x.id, amount: x.interest }))
+      ownedOnReturn(data.facts, data.facts.int1099s).map((x) => ({
+        id: x.id,
+        amount: x.interest,
+      }))
     ),
     ...rows(
       'dividend',
-      data.facts.div1099s.map((x) => ({
+      // A spouse's 1099s are left off a non-joint return.
+      ownedOnReturn(data.facts, data.facts.div1099s).map((x) => ({
         id: x.id,
         amount: x.ordinaryDividends,
       }))
@@ -501,42 +507,217 @@ export function schBRows(
   ];
 }
 
+/** One Schedule C entry: the field-map key, its text (none for a box) and how the entry sheet says it. */
+export interface SchCEntry {
+  field: string;
+  text?: string;
+  sheet: string;
+}
+
+/**
+ * Every non-amount Schedule C entry, for the PDF filler and the Free File
+ * entry sheet alike: header items A-J, line 30, line 32, Part IV and Part V.
+ * `handwrite` lists what the user still has to write in.
+ */
+export function scheduleCEntries(
+  data: StoreData,
+  owner: PersonId,
+  values: Map<string, number>
+): { entries: SchCEntry[]; handwrite: string[] } {
+  const biz = data.facts.businesses.find((b) => b.owner === owner);
+  const entries: SchCEntry[] = [];
+  const handwrite: string[] = [];
+  if (!biz) return { entries, handwrite };
+  const text = (
+    field: string,
+    value: string | undefined,
+    sheet: string,
+    sheetText = `${sheet}: ${value}`
+  ) => {
+    if (value) entries.push({ field, text: value, sheet: sheetText });
+  };
+  const sqft = (n: number) => `${n.toLocaleString('en-US')} square feet`;
+  const box = (field: string, sheet: string) =>
+    entries.push({ field, sheet: `${sheet}: check the box` });
+  const yesNo = (key: string, v: boolean | undefined, sheet: string) => {
+    if (v !== undefined)
+      entries.push({
+        field: `box.${key}.${v ? 'yes' : 'no'}`,
+        sheet: `${sheet}: check **${v ? 'Yes' : 'No'}**`,
+      });
+  };
+  text(
+    'principalBusiness',
+    data.identity[owner]?.occupation ?? biz.name,
+    'Line A, principal business or profession'
+  );
+  text('businessCode', biz.principalBusinessCode, 'Line B, business code');
+  text('businessName', biz.name, 'Line C, business name');
+  // Backstop: a return computed before these were asked must not leave
+  // them blank without saying so.
+  const missing: [unknown, string][] = [
+    [biz.principalBusinessCode, 'line B: write the 6-digit business code'],
+    [biz.accountingMethod, 'line F: check the accounting method'],
+    [
+      biz.materiallyParticipated,
+      'line G: check Yes or No for material participation',
+    ],
+    [
+      biz.madePaymentsRequiring1099,
+      'line I: check Yes or No for payments that require Form(s) 1099',
+    ],
+  ];
+  for (const [v, what] of missing)
+    if (v === undefined) handwrite.push(`Schedule C, ${what}.`);
+  if (biz.operatedFromHome === false) {
+    const a = data.identity.businesses?.[owner]?.address;
+    if (a?.street || a?.cityStateZip) {
+      text('businessAddress.street', a.street, 'Line E, business address');
+      text(
+        'businessAddress.cityStateZip',
+        a.cityStateZip,
+        'Line E, city, state and ZIP'
+      );
+    } else
+      handwrite.push(
+        'Schedule C, line E: write the business’s street address, city, state and ZIP code.'
+      );
+  }
+  if (biz.accountingMethod) {
+    const label = { cash: 'Cash', accrual: 'Accrual', other: 'Other' }[
+      biz.accountingMethod
+    ];
+    const other =
+      biz.accountingMethod === 'other' && biz.accountingMethodOther
+        ? `, specify "${biz.accountingMethodOther}"`
+        : '';
+    entries.push({
+      field: `box.accounting.${biz.accountingMethod}`,
+      sheet: `Line F, accounting method: check **${label}**${other}`,
+    });
+    // The "specify" text is part of the line F entry on the sheet.
+    if (biz.accountingMethod === 'other' && biz.accountingMethodOther)
+      entries.push({
+        field: 'accountingOther',
+        text: biz.accountingMethodOther,
+        sheet: '',
+      });
+  }
+  yesNo(
+    'materiallyParticipated',
+    biz.materiallyParticipated,
+    'Line G, materially participated'
+  );
+  if (biz.startedOrAcquiredThisYear)
+    box(
+      'box.startedOrAcquired',
+      'Line H, started or acquired this business this year'
+    );
+  yesNo(
+    'payments1099',
+    biz.madePaymentsRequiring1099,
+    'Line I, payments that require Form(s) 1099'
+  );
+  if (biz.madePaymentsRequiring1099)
+    yesNo(
+      'filed1099',
+      biz.filedRequired1099s,
+      'Line J, filed the required Form(s) 1099'
+    );
+  if (biz.homeOffice?.method === 'simplified') {
+    const { squareFeet, homeSquareFeet } = biz.homeOffice;
+    if (homeSquareFeet !== undefined)
+      text(
+        'homeOffice.homeSqFt',
+        String(homeSquareFeet),
+        'Line 30(a)',
+        `Line 30(a), simplified method: total area of your home ${sqft(homeSquareFeet)}`
+      );
+    text(
+      'homeOffice.businessSqFt',
+      String(squareFeet),
+      'Line 30(b)',
+      `Line 30(b), simplified method: part of your home used for business ${sqft(squareFeet)}`
+    );
+  }
+  // Line 32: only with a loss on line 31.
+  if ((values.get('31') ?? 0) < 0 && biz.allInvestmentAtRisk === true)
+    box('box.atRisk.all', 'Line 32a, all investment is at risk');
+  // Part IV: with car or truck expenses on line 9.
+  if ((values.get('9') ?? 0) > 0) {
+    const v = biz.vehicleUse ?? {};
+    const d = v.placedInService?.split('-');
+    if (d?.length === 3) {
+      // Three boxes on the PDF; one line on the entry sheet.
+      text(
+        'vehicle.placedInService.month',
+        d[1],
+        'Line 43',
+        `Line 43, date placed in service: ${d[1]}/${d[2]}/${d[0]}`
+      );
+      text('vehicle.placedInService.day', d[2], 'Line 43', '');
+      text('vehicle.placedInService.year', d[0], 'Line 43', '');
+    }
+    const miles = biz.vehicle?.businessMiles ?? v.businessMiles;
+    const n = (x: number | undefined) =>
+      x === undefined ? undefined : x.toLocaleString('en-US');
+    text('vehicle.businessMiles', n(miles), 'Line 44a, business miles');
+    text(
+      'vehicle.commutingMiles',
+      n(v.commutingMiles),
+      'Line 44b, commuting miles'
+    );
+    text('vehicle.otherMiles', n(v.otherMiles), 'Line 44c, other miles');
+    yesNo(
+      'vehicle45',
+      v.availableOffDuty,
+      'Line 45, available for personal use off duty'
+    );
+    yesNo(
+      'vehicle46',
+      v.anotherVehicle,
+      'Line 46, another vehicle for personal use'
+    );
+    yesNo(
+      'vehicle47a',
+      v.hasEvidence,
+      'Line 47a, evidence to support the deduction'
+    );
+    if (v.hasEvidence)
+      yesNo(
+        'vehicle47b',
+        v.evidenceWritten,
+        'Line 47b, the evidence is written'
+      );
+  }
+  const other = values.get('48') ?? values.get('27b');
+  if (other) {
+    entries.push({
+      field: 'otherExpense1.name',
+      text: OTHER_EXPENSE_DESCRIPTION,
+      sheet: `Part V, other expenses: description "${OTHER_EXPENSE_DESCRIPTION}"`,
+    });
+  }
+  return { entries, handwrite };
+}
+
 function fillSchC(
   f: Filler,
   map: FieldMap,
   data: StoreData,
   owner: PersonId,
-  values: Map<string, number>
+  values: Map<string, number>,
+  handwrite: string[]
 ): void {
-  const biz = data.facts.businesses.find((b) => b.owner === owner);
-  if (!biz) return;
   const F = map.fields!;
-  f.text(F['businessName']!, biz.name);
-  f.text(F['principalBusiness']!, data.identity[owner]?.occupation ?? biz.name);
-  f.text(F['businessCode']!, biz.principalBusinessCode);
-  if (biz.accountingMethod) {
-    f.check(F[`box.accounting.${biz.accountingMethod}`]!);
-    if (biz.accountingMethod === 'other')
-      f.text(F['accountingOther']!, biz.accountingMethodOther);
-  }
-  const yesNo = (key: string, v: boolean | undefined) => {
-    if (v !== undefined) f.check(F[`box.${key}.${v ? 'yes' : 'no'}`]!);
-  };
-  yesNo('materiallyParticipated', biz.materiallyParticipated);
-  if (biz.startedOrAcquiredThisYear) f.check(F['box.startedOrAcquired']!);
-  yesNo('payments1099', biz.madePaymentsRequiring1099);
-  if (biz.madePaymentsRequiring1099) yesNo('filed1099', biz.filedRequired1099s);
-  if (biz.homeOffice?.method === 'simplified') {
-    const { squareFeet, homeSquareFeet } = biz.homeOffice;
-    if (homeSquareFeet !== undefined)
-      f.text(F['homeOffice.homeSqFt']!, String(homeSquareFeet));
-    f.text(F['homeOffice.businessSqFt']!, String(squareFeet));
+  const { entries, handwrite: write } = scheduleCEntries(data, owner, values);
+  for (const e of entries) {
+    if (e.text === undefined) f.check(F[e.field]!);
+    else f.text(F[e.field]!, e.text);
   }
   const other = values.get('48') ?? values.get('27b');
-  if (other) {
-    f.text(F['otherExpense1.name']!, OTHER_EXPENSE_DESCRIPTION);
-    f.text(F['otherExpense1.amount']!, money(other));
-  }
+  if (other) f.text(F['otherExpense1.amount']!, money(other));
+  handwrite.push(...write);
 }
 
 /** Schedule 8812 Yes/No answers on lines 12, 19 and 20 (read from the engine's lines). */
@@ -586,7 +767,8 @@ function fill8995(
   });
 }
 
-const RELATIONSHIP: Record<string, string> = {
+/** How the 1040 and Schedule EIC print each relationship (the entry sheet uses the same words). */
+export const RELATIONSHIP: Record<string, string> = {
   child: 'child',
   stepchild: 'stepchild',
   foster_child: 'foster child',

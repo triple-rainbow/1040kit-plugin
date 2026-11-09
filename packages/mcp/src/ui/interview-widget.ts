@@ -101,6 +101,20 @@ const PAGE = `<!doctype html>
   .other-text { margin: 2px 0 4px 36px; max-width: calc(100% - 44px); width: 320px; }
   .other-hint { margin: 0 0 4px 36px; color: var(--bad); font-size: 13px; }
   .q.saved .check { pointer-events: none; }
+  .form { display: grid; gap: 12px; }
+  .row { display: grid; gap: 5px; }
+  .row > .label { font-size: 13px; color: var(--muted); }
+  .row.saved { opacity: .6; }
+  .row.saved .chip, .row.saved input { pointer-events: none; }
+  .person { display: grid; gap: 12px; padding-top: 10px; border-top: 1px solid var(--line); }
+  .person h2 { font-size: 13px; font-weight: 600; margin: 0; }
+  .person.first { border-top: 0; padding-top: 0; }
+  .person-head { display: flex; justify-content: space-between; align-items: center; }
+  .remove { font: inherit; font-size: 13px; border: 0; background: transparent; color: var(--muted); cursor: pointer; text-decoration: underline; }
+  .remove:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .add { font: inherit; font-size: 14px; justify-self: start; border: 1px dashed var(--line); background: transparent;
+         color: var(--accent); border-radius: 999px; padding: 6px 12px; cursor: pointer; }
+  .add:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 </style>
 </head>
 <body>
@@ -212,9 +226,70 @@ function multiselect(q, a) {
   return box;
 }
 
-function control(q) {
+// Label of every field inside a grouped question, for the message after saving.
+const fieldLabels = new Map(); // field path -> 'About Robin, Date of birth'
+
+// A compact form: several facts about one thing (a dependent, a business),
+// one row each. Every field saves to its own fact path. "Add another person"
+// repeats the fields for the next dependent id.
+function groupForm(q, a, card) {
+  const form = el('div', { class: 'form', role: 'group', 'aria-label': q.question });
+  let uid = 0;
+  const addRows = (fields, into, person) => {
+    for (const f of fields) {
+      // For the post-save message and the "still open" list: card, person, field.
+      fieldLabels.set(f.path, { card: q.question, person, label: f.label });
+      const name = person ? person + ': ' + f.label : f.label;
+      const sub = { path: f.path, question: name, answer: f.answer };
+      const ctl = control(sub);
+      const id = 'f-' + (++uid) + '-' + Math.random().toString(36).slice(2, 7);
+      // A text, date or number box gets a real <label for>; chips are labelled by it.
+      const box = ctl.tagName === 'INPUT' ? ctl : ctl.querySelector && ctl.querySelector('input');
+      let label;
+      if (box) { box.id = id; label = el('label', { class: 'label', for: id }, f.label); }
+      else { label = el('span', { class: 'label', id }, f.label); if (ctl.setAttribute) ctl.setAttribute('aria-labelledby', id); }
+      const row = el('div', { class: 'row' }, label, ctl);
+      row.dataset.path = f.path;
+      into.append(row);
+    }
+    if (card) card.dataset.paths = JSON.stringify([...JSON.parse(card.dataset.paths || '[]'), ...fields.map((f) => f.path)]);
+  };
+  if (a.addAnother) {
+    // New people: each gets a heading, and added ones can be removed.
+    const first = el('div', { class: 'person first' }, el('h2', {}, 'Person 1'));
+    addRows(a.fields, first, 'Person 1');
+    form.append(first);
+    let n = a.addAnother.nextIndex;
+    let count = 1;
+    const add = el('button', { class: 'add', type: 'button' }, '+ ' + a.addAnother.label);
+    add.addEventListener('click', () => {
+      const id = 'dependent_' + n++;
+      const title = 'Person ' + (++count);
+      const fields = a.addAnother.fields.map((f) => ({ ...f, path: f.path.split('{id}').join(id) }));
+      const remove = el('button', { class: 'remove', type: 'button', 'aria-label': 'Remove ' + title }, 'Remove');
+      const person = el('div', { class: 'person' }, el('div', { class: 'person-head' }, el('h2', {}, title), remove));
+      addRows(fields, person, title);
+      remove.addEventListener('click', () => {
+        const paths = new Set(fields.map((f) => f.path));
+        for (const p of paths) { answers.delete(p); fieldLabels.delete(p); }
+        if (card) card.dataset.paths = JSON.stringify(JSON.parse(card.dataset.paths || '[]').filter((p) => !paths.has(p)));
+        person.remove();
+        refreshBar();
+        add.focus();
+      });
+      form.insertBefore(person, add);
+      const firstInput = person.querySelector('.row input, .row button');
+      if (firstInput) firstInput.focus();
+    });
+    form.append(add);
+  } else addRows(a.fields, form);
+  return form;
+}
+
+function control(q, card) {
   const a = q.answer || { kind: 'open' };
   switch (a.kind) {
+    case 'group': return groupForm(q, a, card);
     case 'multiselect': return multiselect(q, a);
     case 'yesno': return chips(q, [{ value: true, label: 'Yes' }, { value: false, label: 'No' }]);
     case 'choice': return chips(q, a.options);
@@ -263,6 +338,7 @@ function render(result) {
   workspace = data.workspace;
   questions = data.questions || [];
   answers.clear();
+  fieldLabels.clear();
   if (data.done || questions.length === 0) {
     root.append(el('div', { class: 'done' }, 'All questions are answered. The assistant can calculate your return now.'));
     return;
@@ -278,10 +354,9 @@ function render(result) {
     const whyId = 'why-' + Math.random().toString(36).slice(2);
     const card = el('section', { class: 'q', 'aria-label': q.question, ...(q.why ? { 'aria-describedby': whyId } : {}) },
       el('p', {}, q.question),
-      ...(q.why ? [el('p', { class: 'why', id: whyId }, q.why)] : []),
-      control(q),
-      el('p', { class: 'err', hidden: '' }));
+      ...(q.why ? [el('p', { class: 'why', id: whyId }, q.why)] : []));
     card.dataset.path = q.path;
+    card.append(control(q, card), el('p', { class: 'err', hidden: '' }));
     if (q.answer && q.answer.kind === 'multiselect')
       card.dataset.paths = JSON.stringify([...q.answer.options.map((o) => o.path), ...(q.answer.other ? [q.answer.other.path] : [])]);
     root.append(card);
@@ -324,33 +399,73 @@ async function save() {
     saveBtn.disabled = false;
     return;
   }
-  const rejected = new Map((env.rejected || []).map((r) => [questionPathFor(r.path), r.reason || 'Not accepted']));
-  for (const [path, why] of rejected) {
+  // Rejections come back per fact path; show each on its card.
+  const rejectedPaths = new Map((env.rejected || []).map((r) => [r.path, r.reason || 'Not accepted']));
+  const rejected = new Map();
+  for (const [path, why] of rejectedPaths) {
+    rejected.set(questionPathFor(path), why);
     const c = cardFor(path);
-    if (c) { const e = c.querySelector('.err'); e.textContent = why; e.hidden = false; }
+    if (c) { const e = c.querySelector('.err'); e.textContent = (fieldLabels.get(path) ? fieldLabels.get(path).label + ': ' : '') + why; e.hidden = false; }
   }
-  const saved = entries.filter(([p]) => !rejected.has(p));
+  const saved = entries.filter(([p, a]) => !(a.sets ? a.sets.some((x) => rejectedPaths.has(x.path)) : rejectedPaths.has(p)));
   for (const [p] of saved) {
     answers.delete(p);
     const c = cardFor(p);
-    if (c && !c.classList.contains('saved')) {
-      c.classList.add('saved');
-      for (const i of c.querySelectorAll('button, input')) i.setAttribute('disabled', '');
-      c.append(el('p', { class: 'ok' }, 'Saved'));
+    if (!c || c.classList.contains('saved')) continue;
+    const row = [...c.querySelectorAll('.row')].find((r) => r.dataset.path === p);
+    if (row) {
+      // A form: mark the row; the card is done when every row is.
+      row.classList.add('saved');
+      for (const i of row.querySelectorAll('button, input')) i.setAttribute('disabled', '');
+      if ([...c.querySelectorAll('.row')].every((r) => r.classList.contains('saved'))) {
+        c.classList.add('saved');
+        for (const i of c.querySelectorAll('button')) i.setAttribute('disabled', '');
+        c.append(el('p', { class: 'ok' }, 'Saved'));
+      }
+      continue;
     }
+    c.classList.add('saved');
+    for (const i of c.querySelectorAll('button, input')) i.setAttribute('disabled', '');
+    c.append(el('p', { class: 'ok' }, 'Saved'));
   }
   const lines = saved.map(([p, a]) => {
     const q = questions.find((x) => x.path === p);
     if (q && q.answer && q.answer.kind === 'multiselect') return '- Situations that apply: ' + a.label;
+    if (fieldLabels.has(p)) return null; // grouped below, one line per card
     return '- ' + (q ? q.question : p) + ' ' + a.label;
-  });
+  }).filter(Boolean);
+  // A grouped card: one line per card (and person), its fields after it.
+  const byCard = new Map();
+  for (const [p, a] of saved) {
+    const f = fieldLabels.get(p);
+    if (!f) continue;
+    const head = f.person ? f.card.replace(/\\?$/, '') + ' — ' + f.person : f.card;
+    byCard.set(head, [...(byCard.get(head) || []), f.label + ': ' + a.label]);
+  }
+  for (const [head, parts] of byCard) lines.push('- ' + head + ': ' + parts.join('; '));
   statusEl.textContent = saved.length ? 'Saved ' + saved.length + '.' : '';
   refreshBar();
   if (!saved.length) return;
-  const open = [...root.querySelectorAll('section.q')].filter((c) => !c.classList.contains('saved')).length;
+  // Name what's still open, field by field, so the assistant knows what to ask.
+  // Short field names are listed; a card of full questions gets a count.
+  // Anything the card can't take is named, so it gets asked in chat.
+  const still = [];
+  for (const c of root.querySelectorAll('section.q')) {
+    if (c.classList.contains('saved')) continue;
+    const rows = [...c.querySelectorAll('.row')].filter((r) => !r.classList.contains('saved'));
+    if (!c.querySelector('.row')) { still.push(c.getAttribute('aria-label')); continue; }
+    const open = rows.map((r) => ({ f: fieldLabels.get(r.dataset.path), chat: !!r.querySelector('.note') })).filter((x) => x.f);
+    const chat = open.filter((x) => x.chat).map((x) => x.f.label.replace(/\\?.*$/, '') + ' (answer in chat)');
+    if (open.every((x) => x.f.label.length <= 45)) {
+      for (const x of open) still.push((x.f.person ? x.f.person + ' ' : '') + x.f.label + (x.chat ? ' (answer in chat)' : ''));
+    } else {
+      const n = open.length;
+      still.push(c.getAttribute('aria-label') + ': ' + n + (n === 1 ? ' question' : ' questions') + (chat.length ? ', including ' + chat.join(', ') : ''));
+    }
+  }
   const text = 'I answered in the 1040kit card (saved with profile_set):\\n' + lines.join('\\n') +
     (rejected.size ? '\\nSome answers were not accepted; I will fix them in the card.'
-      : open ? '\\n' + open + (open === 1 ? ' question in the card is' : ' questions in the card are') + ' still unanswered; I will answer them there.'
+      : still.length ? '\\nStill open: ' + still.join('; ') + '.'
       : '\\nPlease continue.');
   const caps = app.getHostCapabilities() || {};
   try {

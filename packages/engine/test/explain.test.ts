@@ -57,3 +57,21 @@ test('explain unknown is null', () => {
   assert.equal(explainLine(r, 'noSuchNode'), null);
   assert.equal(explainLine(r, ''), null);
 });
+
+test('an alias line is explained as itself, with its own description', () => {
+  const r = computeReturn(
+    makeFacts({
+      filingStatus: 'single',
+      nec1099s: [nec('nec_1', 3000000)],
+      businesses: [{ owner: 'taxpayer', name: 'Design', expenses: {} }],
+    })
+  );
+  const e = explainLine(r, 'schC.taxpayer:5');
+  assert.ok(e);
+  assert.equal(e.node.line, '5');
+  assert.equal(e.node.form, 'schC.taxpayer');
+  assert.equal(e.node.label, 'Gross profit (line 3 minus line 4)');
+  assert.equal(e.node.value, r.nodes['schC.grossIncome.taxpayer']!.value);
+  const agi = explainLine(r, 'f1040:11b');
+  assert.equal(agi?.node.line, '11b');
+});

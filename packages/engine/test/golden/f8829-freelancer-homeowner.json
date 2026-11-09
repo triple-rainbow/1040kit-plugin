@@ -57,7 +57,8 @@
             "landValue": 8000000,
             "businessUseStart": "2022-03-01"
           }
-        }
+        },
+        "operatedFromHome": true
       }
     ],
     "rentals": [],

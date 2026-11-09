@@ -203,6 +203,38 @@ export interface Business {
     | HomeOfficeActual;
   /** Standard mileage; when present, `expenses.car_truck` is ignored. */
   vehicle?: { businessMiles: number };
+  /**
+   * Line E: `false` when the business wasn't run from the home address on
+   * Form 1040; its address is then an identity field (identity.businesses).
+   */
+  operatedFromHome?: boolean;
+  /**
+   * Line 32: with a loss, `true` checks 32a (all investment at risk). `false`
+   * (32b) needs Form 6198, which v1 does not compute: flagged out of scope.
+   */
+  allInvestmentAtRisk?: boolean;
+  /** Part IV, lines 43-47b: asked when car or truck expenses are claimed on line 9. */
+  vehicleUse?: VehicleUse;
+}
+
+/** Schedule C Part IV, information on your vehicle. */
+export interface VehicleUse {
+  /** Line 43, YYYY-MM-DD. */
+  placedInService?: string;
+  /** Line 44a, when the standard mileage rate isn't used (with it, `vehicle.businessMiles`). */
+  businessMiles?: number;
+  /** Line 44b. */
+  commutingMiles?: number;
+  /** Line 44c. */
+  otherMiles?: number;
+  /** Line 45: available for personal use during off-duty hours. */
+  availableOffDuty?: boolean;
+  /** Line 46: you or your spouse have another vehicle for personal use. */
+  anotherVehicle?: boolean;
+  /** Line 47a: evidence to support the deduction. */
+  hasEvidence?: boolean;
+  /** Line 47b: the evidence is written; asked when 47a is yes. */
+  evidenceWritten?: boolean;
 }
 
 /**

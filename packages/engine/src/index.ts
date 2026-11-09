@@ -12,6 +12,7 @@ export { getParams } from './params/index.ts';
 export type { YearParams } from './params/index.ts';
 export { resolveFactPath } from './graph.ts';
 export { classifyDependent } from './dependents.ts';
+export { ownedOnReturn } from './facts.ts';
 export type { DependentClass, DependentCredit } from './dependents.ts';
 
 export const engine: EngineApi = {

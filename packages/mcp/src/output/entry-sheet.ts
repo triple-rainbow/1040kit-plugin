@@ -1,4 +1,4 @@
-import type { Business, FormId, ReturnResult } from '@1040kit/engine';
+import { ownedOnReturn, type FormId, type ReturnResult } from '@1040kit/engine';
 
 import { compareLines, FORM_ORDER } from '../calc.ts';
 import type { StoreData } from '../store/types.ts';
@@ -6,7 +6,8 @@ import { FORM_TITLES, formName } from './field-maps.ts';
 import {
   dependentCreditBox,
   formLineValues,
-  OTHER_EXPENSE_DESCRIPTION,
+  RELATIONSHIP,
+  scheduleCEntries,
   sch8812Answers,
   schBRows,
   senior,
@@ -126,7 +127,7 @@ export function entrySheetMarkdown(
           : '',
     ].filter(Boolean);
     out.push(
-      `- Dependent ${i + 1}: ${[n?.firstName, n?.lastName].filter(Boolean).join(' ') || d.id}, ${d.relationship?.replace(/_/g, ' ') ?? ''}, SSN: ${TYPE_YOURSELF}${boxes.length ? '; ' + boxes.join('; ') : ''}`
+      `- Dependent ${i + 1}: ${[n?.firstName, n?.lastName].filter(Boolean).join(' ') || d.id}, ${d.relationship ? RELATIONSHIP[d.relationship] : ''}, SSN: ${TYPE_YOURSELF}${boxes.length ? '; ' + boxes.join('; ') : ''}`
     );
   });
   if (id.taxpayer?.occupation)
@@ -138,7 +139,8 @@ export function entrySheetMarkdown(
 
   // Free File Fillable Forms takes W-2s in "Step 2" (income documents), and
   // their federal withholding must match the 1040 before it will e-file.
-  if (f.w2s.length) {
+  const w2s = ownedOnReturn(f, f.w2s);
+  if (w2s.length) {
     out.push('## Step 2: your W-2s', '');
     out.push(
       'Free File Fillable Forms asks you to enter each W-2 separately (Step 2), and the withholding must match line 25a before it will e-file. Copy each one from the W-2 itself:',
@@ -146,7 +148,7 @@ export function entrySheetMarkdown(
     );
     const cents = (c: number | undefined) =>
       c === undefined ? '—' : (c / 100).toFixed(2);
-    f.w2s.forEach((w, i) => {
+    w2s.forEach((w, i) => {
       const who =
         w.owner === 'spouse' && f.filingStatus === 'mfj' ? ' (spouse)' : '';
       out.push(
@@ -193,7 +195,7 @@ export function entrySheetMarkdown(
     out.push('## Schedule EIC', '');
     kids.forEach((d, i) => {
       out.push(
-        `- Child ${i + 1}: ${fullName(id.dependents?.[d.id]) ?? d.id}; SSN ${TYPE_YOURSELF}; year of birth ${d.dateOfBirth?.slice(0, 4) ?? '—'}; relationship ${d.relationship?.replace('_', ' ') ?? '—'}; months lived with you in the U.S. ${d.monthsLivedWithTaxpayer ?? '—'}; student ${d.fullTimeStudent ? 'yes' : 'no'}; permanently disabled ${d.permanentlyDisabled ? 'yes' : 'no'}`
+        `- Child ${i + 1}: ${fullName(id.dependents?.[d.id]) ?? d.id}; SSN ${TYPE_YOURSELF}; year of birth ${d.dateOfBirth?.slice(0, 4) ?? '—'}; relationship ${d.relationship ? RELATIONSHIP[d.relationship] : '—'}; months lived with you in the U.S. ${d.monthsLivedWithTaxpayer ?? '—'}; student ${d.fullTimeStudent ? 'yes' : 'no'}; permanently disabled ${d.permanentlyDisabled ? 'yes' : 'no'}`
       );
     });
     out.push('');
@@ -227,32 +229,6 @@ export function entrySheetMarkdown(
 }
 
 /** Schedule C items F-J, in the words of the form, as fill.ts checks them. */
-function schCHeaderEntries(biz: Business): string[] {
-  const out: string[] = [];
-  const yn = (v: boolean) => `**${v ? 'Yes' : 'No'}**`;
-  if (biz.accountingMethod)
-    out.push(
-      `Line F, accounting method: check **${{ cash: 'Cash', accrual: 'Accrual', other: 'Other' }[biz.accountingMethod]}**${biz.accountingMethod === 'other' && biz.accountingMethodOther ? `, specify "${biz.accountingMethodOther}"` : ''}`
-    );
-  if (biz.materiallyParticipated !== undefined)
-    out.push(
-      `Line G, materially participated: check ${yn(biz.materiallyParticipated)}`
-    );
-  if (biz.startedOrAcquiredThisYear)
-    out.push(
-      'Line H, started or acquired this business this year: check the box'
-    );
-  if (biz.madePaymentsRequiring1099 !== undefined)
-    out.push(
-      `Line I, payments that require Form(s) 1099: check ${yn(biz.madePaymentsRequiring1099)}`
-    );
-  if (biz.madePaymentsRequiring1099 && biz.filedRequired1099s !== undefined)
-    out.push(
-      `Line J, filed the required Form(s) 1099: check ${yn(biz.filedRequired1099s)}`
-    );
-  return out;
-}
-
 /**
  * The non-amount entries each form prints, the same ones fill.ts writes:
  * names, codes, square feet, descriptions and yes/no boxes.
@@ -270,31 +246,11 @@ function formTextEntries(
     const form: FormId = `schC.${owner}`;
     const biz = data.facts.businesses.find((b) => b.owner === owner);
     if (!biz) continue;
-    if (biz.name) add(form, `Line C, business name: ${biz.name}`);
-    const principal = data.identity[owner]?.occupation ?? biz.name;
-    if (principal)
-      add(form, `Line A, principal business or profession: ${principal}`);
-    if (biz.principalBusinessCode)
-      add(form, `Line B, business code: ${biz.principalBusinessCode}`);
-    for (const e of schCHeaderEntries(biz)) add(form, e);
-    if (biz.homeOffice?.method === 'simplified') {
-      const sq = (n: number) => `${n.toLocaleString('en-US')} square feet`;
-      if (biz.homeOffice.homeSquareFeet !== undefined)
-        add(
-          form,
-          `Line 30(a), simplified method: total area of your home ${sq(biz.homeOffice.homeSquareFeet)}`
-        );
-      add(
-        form,
-        `Line 30(b), simplified method: part of your home used for business ${sq(biz.homeOffice.squareFeet)}`
-      );
-    }
-    const other = formLineValues(result, form);
-    if (other.get('48')?.value || other.get('27b')?.value)
-      add(
-        form,
-        `Part V, other expenses: description "${OTHER_EXPENSE_DESCRIPTION}"`
-      );
+    const values = new Map(
+      [...formLineValues(result, form)].map(([l, v]) => [l, v.value])
+    );
+    for (const e of scheduleCEntries(data, owner, values).entries)
+      if (e.sheet) add(form, e.sheet);
     if (biz.homeOffice?.method === 'actual') {
       const f8829: FormId = `f8829.${owner}`;
       const lines = formLineValues(result, f8829);

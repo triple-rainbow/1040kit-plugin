@@ -221,6 +221,7 @@ test('Schedule C header items and line 30(a) are asked for each business', () =>
     ['principalBusinessCode', true],
     ['accountingMethod', true],
     ['startedOrAcquiredThisYear', true],
+    ['operatedFromHome', true],
     ['madePaymentsRequiring1099', true],
   ]);
   const answered = {
@@ -228,6 +229,7 @@ test('Schedule C header items and line 30(a) are asked for each business', () =>
     principalBusinessCode: '541430',
     accountingMethod: 'cash' as const,
     startedOrAcquiredThisYear: false,
+    operatedFromHome: true,
     madePaymentsRequiring1099: false,
   };
   assert.deepEqual(paths(facts(answered)), []);
@@ -246,5 +248,104 @@ test('Schedule C header items and line 30(a) are asked for each business', () =>
       ['filedRequired1099s', true],
       ['homeOffice.homeSquareFeet', true],
     ]
+  );
+});
+
+test('Schedule C Part IV is asked when car expenses are claimed; line 32 with a loss', () => {
+  const answered = {
+    materiallyParticipated: true,
+    principalBusinessCode: '541430',
+    accountingMethod: 'cash' as const,
+    startedOrAcquiredThisYear: false,
+    operatedFromHome: true,
+    madePaymentsRequiring1099: false,
+  };
+  const facts = (
+    biz: Partial<TaxFacts['businesses'][number]>,
+    income = 3000000
+  ) =>
+    makeFacts({
+      filingStatus: 'single',
+      nec1099s: [nec('nec_1', income)],
+      businesses: [
+        {
+          owner: 'taxpayer',
+          name: 'Design',
+          expenses: {},
+          ...answered,
+          ...biz,
+        },
+      ],
+    });
+  const paths = (f: TaxFacts) =>
+    requiredFacts(f)
+      .filter((m) => m.path.startsWith('businesses[taxpayer].'))
+      .map((m) => m.path.slice('businesses[taxpayer].'.length));
+  // Standard mileage: business miles come from vehicle.businessMiles.
+  assert.deepEqual(paths(facts({ vehicle: { businessMiles: 3000 } })), [
+    'vehicleUse.placedInService',
+    'vehicleUse.commutingMiles',
+    'vehicleUse.otherMiles',
+    'vehicleUse.availableOffDuty',
+    'vehicleUse.anotherVehicle',
+    'vehicleUse.hasEvidence',
+    'vehicleUse.evidenceWritten',
+  ]);
+  // Actual expenses also ask the business miles; 47b only after a 47a yes.
+  const actual = paths(
+    facts({
+      expenses: { car_truck: 120000 },
+      vehicleUse: { hasEvidence: true },
+    })
+  );
+  assert.ok(actual.includes('vehicleUse.businessMiles'));
+  assert.ok(actual.includes('vehicleUse.evidenceWritten'));
+  // No records: 47b is not asked.
+  assert.ok(
+    !paths(
+      facts({
+        vehicle: { businessMiles: 3000 },
+        vehicleUse: { hasEvidence: false },
+      })
+    ).includes('vehicleUse.evidenceWritten')
+  );
+  assert.deepEqual(paths(facts({})), []);
+  // A loss asks line 32; "No" is out of scope (Form 6198).
+  const loss = facts({ expenses: { supplies: 5000000 } });
+  assert.deepEqual(paths(loss), ['allInvestmentAtRisk']);
+  const notAtRisk = computeReturn(
+    facts({ expenses: { supplies: 5000000 }, allInvestmentAtRisk: false })
+  );
+  assert.ok(notAtRisk.unsupported.some((u) => u.code === 'schedule_c_at_risk'));
+});
+
+test('on a joint return with two businesses, each question names its business', () => {
+  const facts = makeFacts({
+    filingStatus: 'mfj',
+    spouse: { id: 'spouse' },
+    nec1099s: [nec('nec_1', 3000000), nec('nec_2', 2000000, 'spouse')],
+    businesses: [
+      { owner: 'taxpayer', name: 'Design Studio', expenses: {} },
+      { owner: 'spouse', expenses: {} },
+    ],
+  });
+  const asked = requiredFacts(facts).filter((m) =>
+    m.path.startsWith('businesses[')
+  );
+  const byField = new Map<string, string[]>();
+  for (const m of asked) {
+    const field = m.path.slice(m.path.indexOf('].') + 2);
+    byField.set(field, [...(byField.get(field) ?? []), m.question]);
+  }
+  for (const [field, qs] of byField) {
+    assert.equal(qs.length, 2, field);
+    assert.notEqual(qs[0], qs[1], `${field} reads the same for both`);
+  }
+  assert.ok(
+    byField.get('principalBusinessCode')![0]!.includes('Design Studio')
+  );
+  assert.match(
+    byField.get('materiallyParticipated')![0]!,
+    /with your spouse’s help/
   );
 });

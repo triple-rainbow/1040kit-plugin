@@ -311,6 +311,14 @@ export function scopeItems(
         deferredTo: 'v2',
       });
     }
+    if (biz.some((b) => b.allInvestmentAtRisk === false)) {
+      push(out, {
+        code: 'schedule_c_at_risk',
+        message:
+          'A Schedule C loss where not all of the investment is at risk (line 32b) needs Form 6198 (at-risk limits), which is not supported yet.',
+        deferredTo: 'v2',
+      });
+    }
     if (biz.some((b) => b.materiallyParticipated === false)) {
       push(out, {
         code: 'schedule_c_passive',

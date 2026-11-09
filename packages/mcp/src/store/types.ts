@@ -87,6 +87,10 @@ export interface Identity {
     zip?: string;
   };
   phone?: string;
+  /** Schedule C line E (business address), by owner, when not run from home. */
+  businesses?: Partial<
+    Record<PersonId, { address?: { street?: string; cityStateZip?: string } }>
+  >;
   /** Schedule E line 1a, by rental id. */
   rentals?: Record<
     string,
@@ -111,6 +115,8 @@ export interface ExpenseImport {
 export interface LastCalc {
   at: string;
   factsHash: string;
+  /** The 1040kit version that computed it; a different version makes it stale. */
+  version?: string;
   result: ReturnResult;
 }
 
