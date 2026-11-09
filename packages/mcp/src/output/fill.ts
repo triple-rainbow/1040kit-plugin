@@ -8,6 +8,7 @@
 import { readFile } from 'node:fs/promises';
 import {
   classifyDependent,
+  ownedOnReturn,
   getParams,
   type Dependent,
   type DependentCredit,
@@ -490,11 +491,15 @@ export function schBRows(
   return [
     ...rows(
       'interest',
-      data.facts.int1099s.map((x) => ({ id: x.id, amount: x.interest }))
+      ownedOnReturn(data.facts, data.facts.int1099s).map((x) => ({
+        id: x.id,
+        amount: x.interest,
+      }))
     ),
     ...rows(
       'dividend',
-      data.facts.div1099s.map((x) => ({
+      // A spouse's 1099s are left off a non-joint return.
+      ownedOnReturn(data.facts, data.facts.div1099s).map((x) => ({
         id: x.id,
         amount: x.ordinaryDividends,
       }))
@@ -548,6 +553,22 @@ export function scheduleCEntries(
   );
   text('businessCode', biz.principalBusinessCode, 'Line B, business code');
   text('businessName', biz.name, 'Line C, business name');
+  // Backstop: a return computed before these were asked must not leave
+  // them blank without saying so.
+  const missing: [unknown, string][] = [
+    [biz.principalBusinessCode, 'line B: write the 6-digit business code'],
+    [biz.accountingMethod, 'line F: check the accounting method'],
+    [
+      biz.materiallyParticipated,
+      'line G: check Yes or No for material participation',
+    ],
+    [
+      biz.madePaymentsRequiring1099,
+      'line I: check Yes or No for payments that require Form(s) 1099',
+    ],
+  ];
+  for (const [v, what] of missing)
+    if (v === undefined) handwrite.push(`Schedule C, ${what}.`);
   if (biz.operatedFromHome === false) {
     const a = data.identity.businesses?.[owner]?.address;
     if (a?.street || a?.cityStateZip) {
@@ -744,7 +765,8 @@ function fill8995(
   });
 }
 
-const RELATIONSHIP: Record<string, string> = {
+/** How the 1040 and Schedule EIC print each relationship (the entry sheet uses the same words). */
+export const RELATIONSHIP: Record<string, string> = {
   child: 'child',
   stepchild: 'stepchild',
   foster_child: 'foster child',

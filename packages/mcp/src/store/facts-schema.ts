@@ -253,9 +253,11 @@ const rental = z.strictObject({
 const business = z.strictObject({
   owner: personId,
   name: z.string().max(120).optional(),
+  // Answered in chat, where the assistant can suggest a code from the IRS list.
   principalBusinessCode: z
     .string()
     .regex(/^\d{6}$/, 'a 6-digit NAICS code')
+    .meta({ answer: 'open' })
     .optional(),
   accountingMethod: z
     .enum(['cash', 'accrual', 'other'])
@@ -277,11 +279,20 @@ const business = z.strictObject({
   expenses: z.partialRecord(scheduleCExpense, nonNegCents),
   homeOffice: z
     .union([
-      z.strictObject({
-        method: z.literal('simplified'),
-        squareFeet: z.number().min(0),
-        homeSquareFeet: z.number().positive().optional(),
-      }),
+      z
+        .strictObject({
+          method: z.literal('simplified'),
+          squareFeet: z.number().min(0),
+          homeSquareFeet: z.number().positive().optional(),
+        })
+        .refine(
+          (h) =>
+            h.homeSquareFeet === undefined || h.homeSquareFeet >= h.squareFeet,
+          {
+            message: 'the whole home can’t be smaller than the office',
+            path: ['homeSquareFeet'],
+          }
+        ),
       homeOfficeActual,
     ])
     .optional(),

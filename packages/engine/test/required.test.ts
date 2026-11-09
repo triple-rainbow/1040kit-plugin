@@ -308,3 +308,34 @@ test('Schedule C Part IV is asked when car expenses are claimed; line 32 with a 
   );
   assert.ok(notAtRisk.unsupported.some((u) => u.code === 'schedule_c_at_risk'));
 });
+
+test('on a joint return with two businesses, each question names its business', () => {
+  const facts = makeFacts({
+    filingStatus: 'mfj',
+    spouse: { id: 'spouse' },
+    nec1099s: [nec('nec_1', 3000000), nec('nec_2', 2000000, 'spouse')],
+    businesses: [
+      { owner: 'taxpayer', name: 'Design Studio', expenses: {} },
+      { owner: 'spouse', expenses: {} },
+    ],
+  });
+  const asked = requiredFacts(facts).filter((m) =>
+    m.path.startsWith('businesses[')
+  );
+  const byField = new Map<string, string[]>();
+  for (const m of asked) {
+    const field = m.path.slice(m.path.indexOf('].') + 2);
+    byField.set(field, [...(byField.get(field) ?? []), m.question]);
+  }
+  for (const [field, qs] of byField) {
+    assert.equal(qs.length, 2, field);
+    assert.notEqual(qs[0], qs[1], `${field} reads the same for both`);
+  }
+  assert.ok(
+    byField.get('principalBusinessCode')![0]!.includes('Design Studio')
+  );
+  assert.match(
+    byField.get('materiallyParticipated')![0]!,
+    /with your spouse’s work/
+  );
+});

@@ -1,4 +1,4 @@
-import type { Business, FormId, ReturnResult } from '@1040kit/engine';
+import { ownedOnReturn, type FormId, type ReturnResult } from '@1040kit/engine';
 
 import { compareLines, FORM_ORDER } from '../calc.ts';
 import type { StoreData } from '../store/types.ts';
@@ -6,6 +6,7 @@ import { FORM_TITLES, formName } from './field-maps.ts';
 import {
   dependentCreditBox,
   formLineValues,
+  RELATIONSHIP,
   scheduleCEntries,
   sch8812Answers,
   schBRows,
@@ -126,7 +127,7 @@ export function entrySheetMarkdown(
           : '',
     ].filter(Boolean);
     out.push(
-      `- Dependent ${i + 1}: ${[n?.firstName, n?.lastName].filter(Boolean).join(' ') || d.id}, ${d.relationship?.replace(/_/g, ' ') ?? ''}, SSN: ${TYPE_YOURSELF}${boxes.length ? '; ' + boxes.join('; ') : ''}`
+      `- Dependent ${i + 1}: ${[n?.firstName, n?.lastName].filter(Boolean).join(' ') || d.id}, ${d.relationship ? RELATIONSHIP[d.relationship] : ''}, SSN: ${TYPE_YOURSELF}${boxes.length ? '; ' + boxes.join('; ') : ''}`
     );
   });
   if (id.taxpayer?.occupation)
@@ -138,7 +139,8 @@ export function entrySheetMarkdown(
 
   // Free File Fillable Forms takes W-2s in "Step 2" (income documents), and
   // their federal withholding must match the 1040 before it will e-file.
-  if (f.w2s.length) {
+  const w2s = ownedOnReturn(f, f.w2s);
+  if (w2s.length) {
     out.push('## Step 2: your W-2s', '');
     out.push(
       'Free File Fillable Forms asks you to enter each W-2 separately (Step 2), and the withholding must match line 25a before it will e-file. Copy each one from the W-2 itself:',
@@ -146,7 +148,7 @@ export function entrySheetMarkdown(
     );
     const cents = (c: number | undefined) =>
       c === undefined ? '—' : (c / 100).toFixed(2);
-    f.w2s.forEach((w, i) => {
+    w2s.forEach((w, i) => {
       const who =
         w.owner === 'spouse' && f.filingStatus === 'mfj' ? ' (spouse)' : '';
       out.push(
@@ -193,7 +195,7 @@ export function entrySheetMarkdown(
     out.push('## Schedule EIC', '');
     kids.forEach((d, i) => {
       out.push(
-        `- Child ${i + 1}: ${fullName(id.dependents?.[d.id]) ?? d.id}; SSN ${TYPE_YOURSELF}; year of birth ${d.dateOfBirth?.slice(0, 4) ?? '—'}; relationship ${d.relationship?.replace('_', ' ') ?? '—'}; months lived with you in the U.S. ${d.monthsLivedWithTaxpayer ?? '—'}; student ${d.fullTimeStudent ? 'yes' : 'no'}; permanently disabled ${d.permanentlyDisabled ? 'yes' : 'no'}`
+        `- Child ${i + 1}: ${fullName(id.dependents?.[d.id]) ?? d.id}; SSN ${TYPE_YOURSELF}; year of birth ${d.dateOfBirth?.slice(0, 4) ?? '—'}; relationship ${d.relationship ? RELATIONSHIP[d.relationship] : '—'}; months lived with you in the U.S. ${d.monthsLivedWithTaxpayer ?? '—'}; student ${d.fullTimeStudent ? 'yes' : 'no'}; permanently disabled ${d.permanentlyDisabled ? 'yes' : 'no'}`
       );
     });
     out.push('');

@@ -383,6 +383,13 @@ export function requiredFactsFrom(
     if (!b) continue;
     const base = `businesses[${o}]`;
     const you = who(o);
+    // On a joint return both businesses get the same questions: name each.
+    const theBiz = b.name
+      ? `“${b.name}”`
+      : o === 'spouse'
+        ? 'your spouse’s business'
+        : 'your business';
+    const mfj = statusOf(facts) === 'mfj';
     const ask = (
       field: string,
       question: string,
@@ -401,7 +408,7 @@ export function requiredFactsFrom(
     if (b.materiallyParticipated === undefined)
       ask(
         'materiallyParticipated',
-        `Did ${you} work in the business regularly and in a real way this year, for example over 500 hours or doing nearly all the work?`,
+        `Did ${you}${mfj ? ' (with your spouse’s work)' : ''} work in ${theBiz} regularly, e.g. over 500 hours or nearly all the work?`,
         'Most people who run their own business do. If not, the business counts as passive, with loss rules 1040kit can’t handle yet.',
         'Schedule C, line G; Pub. 925, Material Participation',
         34
@@ -409,7 +416,7 @@ export function requiredFactsFrom(
     if (!b.principalBusinessCode)
       ask(
         'principalBusinessCode',
-        'Which 6-digit IRS code best describes the business? I can suggest one from the IRS list.',
+        `Which 6-digit IRS business code fits ${theBiz}? If you don’t know it, ask and I’ll suggest one.`,
         'Your business form asks for a code that names the main kind of work the business does.',
         'Schedule C, line B; Schedule C instructions, Principal Business or Professional Activity Codes',
         35
@@ -417,7 +424,7 @@ export function requiredFactsFrom(
     if (b.accountingMethod === undefined)
       ask(
         'accountingMethod',
-        'Do you count income when you’re paid and expenses when you pay them (cash), or when they’re billed (accrual)?',
+        `Does ${theBiz} count income and expenses when paid (cash) or when billed (accrual)?`,
         'Your business form asks which method the business uses. Most freelancers use cash.',
         'Schedule C, line F; Pub. 334, Accounting Methods',
         36
@@ -433,7 +440,7 @@ export function requiredFactsFrom(
     if (b.startedOrAcquiredThisYear === undefined)
       ask(
         'startedOrAcquiredThisYear',
-        `Did ${you} start or buy this business during ${year}?`,
+        `Did ${you} start or buy ${theBiz} during ${year}?`,
         'Your business form has a box for a business that is new this year.',
         'Schedule C, line H',
         37
@@ -441,7 +448,7 @@ export function requiredFactsFrom(
     if (b.madePaymentsRequiring1099 === undefined)
       ask(
         'madePaymentsRequiring1099',
-        'Did the business make payments this year that require filing a Form 1099, such as paying a contractor?',
+        `Did ${theBiz} make payments this year that require a Form 1099, such as paying a contractor?`,
         'Your business form asks whether the business had to send any 1099s.',
         'Schedule C, line I; General Instructions for Certain Information Returns',
         38
@@ -449,7 +456,7 @@ export function requiredFactsFrom(
     else if (b.madePaymentsRequiring1099 && b.filedRequired1099s === undefined)
       ask(
         'filedRequired1099s',
-        'Did you file, or will you file, all the Forms 1099 the business is required to send?',
+        `Did ${theBiz} file, or will it file, all the Forms 1099 it has to send?`,
         'Your business form asks this after a Yes on the 1099 question.',
         'Schedule C, line J',
         38
@@ -457,7 +464,7 @@ export function requiredFactsFrom(
     if (b.operatedFromHome === undefined)
       ask(
         'operatedFromHome',
-        `Did ${you} run the business from your home address?`,
+        `Did ${you} run ${theBiz} from your home address?`,
         'If the business has its own address, your business form asks for it.',
         'Schedule C, line E',
         37
@@ -490,7 +497,7 @@ export function requiredFactsFrom(
       };
       car(
         'placedInService',
-        'When did you start using the vehicle for the business?',
+        `When did you start using the vehicle for ${theBiz}?`,
         'Your business form asks for the date, when you claim car expenses.',
         '43'
       );
@@ -545,7 +552,7 @@ export function requiredFactsFrom(
     )
       ask(
         'homeOffice.homeSquareFeet',
-        'How many square feet is your whole home?',
+        `How many square feet is the whole home where ${theBiz} has its office?`,
         'The simplified home office method asks for the size of your whole home next to the office.',
         'Schedule C, line 30(a)',
         39

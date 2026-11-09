@@ -115,6 +115,8 @@ export interface ExpenseImport {
 export interface LastCalc {
   at: string;
   factsHash: string;
+  /** The 1040kit version that computed it; a different version makes it stale. */
+  version?: string;
   result: ReturnResult;
 }
 

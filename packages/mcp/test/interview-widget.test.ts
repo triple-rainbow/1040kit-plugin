@@ -369,3 +369,39 @@ test('a new dependent is one compact form, with room for more people', async () 
   for (const q of after.questions as { path: string; question: string }[])
     assert.ok(!['dependents'].includes(q.path), q.path);
 });
+
+test('business code goes to chat; the home area is a number and checked', async () => {
+  assert.deepEqual(answerSpec('businesses[taxpayer].principalBusinessCode'), {
+    kind: 'open',
+  });
+  assert.equal(
+    answerSpec('businesses[taxpayer].homeOffice.homeSquareFeet').kind,
+    'number'
+  );
+  const init = await call('workspace_init', {
+    year: 2025,
+    path: `${env.home}/home-area`,
+    acknowledged: true,
+  });
+  const ws = init.workspace as string;
+  const r = await call('profile_set', {
+    workspace: ws,
+    set: [
+      {
+        path: 'businesses[taxpayer]',
+        value: {
+          owner: 'taxpayer',
+          expenses: {},
+          homeOffice: {
+            method: 'simplified',
+            squareFeet: 200,
+            homeSquareFeet: 100,
+          },
+        },
+        source: 'user',
+      },
+    ],
+  });
+  assert.equal(r.rejected.length, 1, JSON.stringify(r));
+  assert.match(r.rejected[0].reason, /whole home/);
+});

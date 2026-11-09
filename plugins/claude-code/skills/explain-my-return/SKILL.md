@@ -19,7 +19,7 @@ The do-my-taxes guardrails apply in full (`../do-my-taxes/references/guardrails.
 ## Steps
 
 1. **Find the workspace.** Ask which tax year, then call `workspace_init({ year })` (it's idempotent and returns the existing `workspace`). On `ok: false`, follow `../do-my-taxes/references/errors.md`.
-2. **Get the current lines.** Call `calc_return({ workspace })`. Match the user's question to a line `id` (or a ref like `f1040:16`). If `complete` is false, say the return isn't finished and the numbers may change.
+2. **Get the current lines.** Call `calc_return({ workspace })`. Match the user's question to a line `id` (or a ref like `f1040:16`). `calc_return` lists only non-zero lines on forms that are on the return, so for a line that's zero or missing ("why no earned income credit?") call `explain_line` with its `form:line` ref, such as `f1040:27a`. If `complete` is false, say the return isn't finished and the numbers may change.
 3. **Explain.** Call `explain_line({ workspace, ref, depth: 2 })`. Go one level deeper (`depth: 3`, or `explain_line` on a child `id`) only if they ask. From the result, say:
    - what the line is (`label`, form and line) and its value;
    - how it's computed (the trace `formula`) and the values feeding it, with where each came from: a document (file name and box), "you told me", or "inferred";

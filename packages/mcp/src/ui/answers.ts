@@ -71,6 +71,16 @@ export function schemaAt(path: string): AnyZod | undefined {
     const def = cur._zod.def;
     if (def.type === 'object') {
       cur = (def.shape as Record<string, AnyZod>)[m[1]!];
+    } else if (def.type === 'union') {
+      // The first option that has this field (homeOffice: simplified | actual).
+      cur = (def.options as AnyZod[])
+        .map((o) => unwrap(o))
+        .map((o) =>
+          o._zod.def.type === 'object'
+            ? (o._zod.def.shape as Record<string, AnyZod>)[m[1]!]
+            : undefined
+        )
+        .find(Boolean);
     } else if (def.type === 'record') {
       cur = def.valueType as AnyZod;
     } else return undefined;
@@ -91,6 +101,7 @@ export function answerSpec(path: string): AnswerSpec {
     { answer?: string; labels?: Record<string, string> } | undefined;
   if (meta?.answer === 'amount') return { kind: 'amount' };
   if (meta?.answer === 'date') return { kind: 'date' };
+  if (meta?.answer === 'open') return { kind: 'open' };
   const s = unwrap(at);
   const def = s._zod.def;
   switch (def.type) {

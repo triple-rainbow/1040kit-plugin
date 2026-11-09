@@ -17,8 +17,19 @@ function resolve(result: ReturnResult, ref: string): LineNode | undefined {
   for (const node of Object.values(result.nodes)) {
     if (node.form === form && node.line === line) return node;
   }
-  const alias = getParams(result.taxYear).lineAliases[ref];
-  return alias ? result.nodes[alias] : undefined;
+  // A line that repeats another one (Schedule C line 5 = line 7 here):
+  // explain the source node, but as the line that was asked about.
+  const params = getParams(result.taxYear);
+  const alias = params.lineAliases[ref];
+  const source = alias ? result.nodes[alias] : undefined;
+  if (!source) return undefined;
+  return {
+    ...source,
+    form: form as LineNode['form'],
+    line,
+    label:
+      params.lineAliasLabels[`${form.split('.')[0]}:${line}`] ?? source.label,
+  };
 }
 
 function build(

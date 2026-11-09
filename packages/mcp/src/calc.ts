@@ -10,6 +10,7 @@ import {
 import type { Deps } from './deps.ts';
 import { ToolError } from './envelope.ts';
 import type { StoreData } from './store/types.ts';
+import { SERVER_VERSION } from './version.ts';
 
 function stable(v: unknown): unknown {
   if (Array.isArray(v)) return v.map(stable);
@@ -68,6 +69,7 @@ export function computeAndCache(deps: Deps, data: StoreData): ReturnResult {
   data.lastCalc = {
     at: deps.now().toISOString(),
     factsHash: factsHash(data.facts),
+    version: SERVER_VERSION,
     result,
   };
   return result;
@@ -78,7 +80,11 @@ export function currentResult(
   deps: Deps,
   data: StoreData
 ): { result: ReturnResult; fresh: boolean } {
-  if (data.lastCalc && data.lastCalc.factsHash === factsHash(data.facts)) {
+  if (
+    data.lastCalc &&
+    data.lastCalc.factsHash === factsHash(data.facts) &&
+    data.lastCalc.version === SERVER_VERSION
+  ) {
     return { result: data.lastCalc.result, fresh: false };
   }
   return { result: computeAndCache(deps, data), fresh: true };

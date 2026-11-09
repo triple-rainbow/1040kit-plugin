@@ -371,3 +371,42 @@ test('the summary names the forms and its sources in plain words', async () => {
   );
   assert.match(instructions, /Attach Copy B of your W-2 /);
 });
+
+test('a spouse’s W-2 is left out of a single return’s filing package', async () => {
+  await set([
+    ...identity,
+    { path: 'w2s[w2_2].owner', value: 'spouse' },
+    { path: 'w2s[w2_2].wages', value: 4000000 },
+    { path: 'w2s[w2_2].federalWithheld', value: 300000 },
+  ]);
+  await reviewAndConfirm();
+  assert.ok(
+    (await filingPrepare({ workspace: ws, path: 'fillable_forms' }, deps())).ok
+  );
+  assert.ok((await filingPrepare({ workspace: ws, path: 'mail' }, deps())).ok);
+  const sheet = await readFile(
+    join(ws, 'outputs', '2025-free-file-fillable-forms.md'),
+    'utf8'
+  );
+  assert.match(sheet, /W-2 1: /);
+  assert.doesNotMatch(sheet, /W-2 2: /);
+  const mail = await readFile(
+    join(ws, 'outputs', '2025-mailing-instructions.md'),
+    'utf8'
+  );
+  assert.match(mail, /Attach Copy B of your W-2 /);
+});
+
+test('a result computed by an older 1040kit must be computed again', async () => {
+  await set(identity);
+  await reviewAndConfirm();
+  await (
+    await openStore(ws)
+  ).write((d) => {
+    d.lastCalc!.version = '0.0.1';
+    return d;
+  });
+  const r = await formsFill({ workspace: ws }, deps());
+  assert.equal(!r.ok && r.error.code, 'RETURN_INCOMPLETE');
+  assert.match(!r.ok ? r.error.message : '', /updated/);
+});

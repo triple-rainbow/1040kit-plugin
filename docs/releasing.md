@@ -24,7 +24,7 @@ On GitHub, create the `npm` environment (Settings → Environments → New envir
 
 ## Cutting a release
 
-1. In a PR, bump `version` in `packages/mcp/package.json` and `SERVER_VERSION` in `packages/mcp/src/server.ts` (the pack test fails if they differ). Merge it.
+1. In a PR, bump `version` in `packages/mcp/package.json` and `SERVER_VERSION` in `packages/mcp/src/version.ts` (the pack test fails if they differ). Merge it.
 2. Tag the merge commit on `main` and push the tag:
 
    ```bash
