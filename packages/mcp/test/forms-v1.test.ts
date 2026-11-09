@@ -479,6 +479,14 @@ test('entry sheet and mailing instructions cover the new forms', async () => {
     /Property A: 12 Rental Rd, Austin, TX 78702; type 1; fair rental days 365/
   );
   assert.match(sheet, /\| Schedule E \| 3:A \| Label schE:3:A \| 14,400 \|/);
+  // Text and box entries the PDF prints are on the sheet too.
+  assert.match(sheet, /- Line C, business name: Pat Example Design/);
+  assert.match(sheet, /- Line A, principal business or profession: /);
+  assert.match(
+    sheet,
+    /Dependent 1: Robin Example, child, .*Lived with you more than half the year/
+  );
+  assert.match(sheet, /- Someone can claim you as a dependent: /);
   // Lines 1a, 1b and 2 are in their own section, not in the amounts table.
   assert.doesNotMatch(sheet, /\| Schedule E \| (1a|1b|2)[.:]/);
   assert.match(sheet, /\| Form 8959 \| 18 \| Label f8959:18 \| 450 \|/);

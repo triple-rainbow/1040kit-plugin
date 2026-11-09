@@ -144,7 +144,7 @@ export function dependentCreditBox(
 }
 
 /** Born before January 2 of (year − 64): 65 or older for the standard-deduction add-on. */
-function senior(dob: string | undefined, year: number): boolean {
+export function senior(dob: string | undefined, year: number): boolean {
   return !!dob && dob < `${year - 64}-01-02`;
 }
 
@@ -172,18 +172,21 @@ export function formLineValues(
       printed: n.line,
     });
   }
-  for (const [where, nodeId] of Object.entries(
-    getParams(result.taxYear).lineAliases
-  )) {
+  const params = getParams(result.taxYear);
+  for (const [where, nodeId] of Object.entries(params.lineAliases)) {
     const at = where.lastIndexOf(':');
     if (where.slice(0, at) !== formId) continue;
-    const line = normLine(where.slice(at + 1));
+    const printed = where.slice(at + 1);
+    const line = normLine(printed);
     const node = result.nodes[nodeId];
     if (node && !values.has(line))
       values.set(line, {
         value: node.value,
-        label: node.label,
-        printed: where.slice(at + 1),
+        // The node describes the line it computes; an alias may need its own words.
+        label:
+          params.lineAliasLabels[`${formId.split('.')[0]}:${printed}`] ??
+          node.label,
+        printed,
       });
   }
   for (const [target, sources] of Object.entries(map?.copies ?? {})) {
@@ -433,36 +436,27 @@ function fillSchB(
   data: StoreData,
   handwrite: string[]
 ): void {
+  const all = schBRows(data);
   const rows = (
-    list: { id: string; amount: number }[],
-    slots: [string, string][] | undefined,
-    what: string
-  ) => {
-    list
-      .filter((x) => x.amount > 0)
-      .forEach((x, i) => {
+    part: 'interest' | 'dividend',
+    slots: [string, string][] | undefined
+  ) =>
+    all
+      .filter((r) => r.part === part)
+      .forEach((r, i) => {
         const slot = slots?.[i];
         if (!slot) {
           if (i === slots?.length)
             handwrite.push(
-              `Schedule B: more ${what} payers than lines; attach a statement`
+              `Schedule B: more ${part} payers than lines; attach a statement`
             );
           return;
         }
-        f.text(slot[0], data.labels[x.id] ?? 'Payer (see Form 1099)');
-        f.text(slot[1], money(Math.round(x.amount / 100)));
+        f.text(slot[0], r.name);
+        f.text(slot[1], money(r.amount));
       });
-  };
-  rows(
-    data.facts.int1099s.map((x) => ({ id: x.id, amount: x.interest })),
-    map.interestRows,
-    'interest'
-  );
-  rows(
-    data.facts.div1099s.map((x) => ({ id: x.id, amount: x.ordinaryDividends })),
-    map.dividendRows,
-    'dividend'
-  );
+  rows('interest', map.interestRows);
+  rows('dividend', map.dividendRows);
   if (data.facts.outOfScope?.foreignIncomeOrAccounts === false) {
     f.check(map.fields!['foreignAccounts.no']!);
     f.check(map.fields!['foreignTrust.no']!);
@@ -471,6 +465,40 @@ function fillSchB(
       'Schedule B Part III (foreign accounts and trusts): answer lines 7a and 8'
     );
   }
+}
+
+/** Schedule C Part V: the one description 1040kit writes for other expenses. */
+export const OTHER_EXPENSE_DESCRIPTION =
+  'Software, subscriptions and other business expenses';
+
+/** Schedule B Part I and II rows: payer name and whole-dollar amount, in order. */
+export function schBRows(
+  data: StoreData
+): { part: 'interest' | 'dividend'; name: string; amount: number }[] {
+  const rows = (
+    part: 'interest' | 'dividend',
+    list: { id: string; amount: number }[]
+  ) =>
+    list
+      .filter((x) => x.amount > 0)
+      .map((x) => ({
+        part,
+        name: data.labels[x.id] ?? 'Payer (see Form 1099)',
+        amount: Math.round(x.amount / 100),
+      }));
+  return [
+    ...rows(
+      'interest',
+      data.facts.int1099s.map((x) => ({ id: x.id, amount: x.interest }))
+    ),
+    ...rows(
+      'dividend',
+      data.facts.div1099s.map((x) => ({
+        id: x.id,
+        amount: x.ordinaryDividends,
+      }))
+    ),
+  ];
 }
 
 function fillSchC(
@@ -490,29 +518,32 @@ function fillSchC(
     f.text(F['homeOffice.businessSqFt']!, String(biz.homeOffice.squareFeet));
   const other = values.get('48') ?? values.get('27b');
   if (other) {
-    f.text(
-      F['otherExpense1.name']!,
-      'Software, subscriptions and other business expenses'
-    );
+    f.text(F['otherExpense1.name']!, OTHER_EXPENSE_DESCRIPTION);
     f.text(F['otherExpense1.amount']!, money(other));
   }
 }
 
-/** Schedule 8812 Yes/No boxes on lines 12, 19 and 20. */
-function fill8812(f: Filler, map: FieldMap, result: ReturnResult): void {
-  const F = map.fields ?? {};
+/** Schedule 8812 Yes/No answers on lines 12, 19 and 20 (read from the engine's lines). */
+export function sch8812Answers(
+  result: ReturnResult
+): { line: string; yes: boolean }[] {
   const v = (id: string) => result.nodes[id]?.value ?? 0;
-  const yesNo = (line: string, yes: boolean) =>
-    f.check(F[`line${line}.${yes ? 'yes' : 'no'}`]!);
-  yesNo('12', v('ctcOdcAfterPhaseout') > 0);
+  const out = [{ line: '12', yes: v('ctcOdcAfterPhaseout') > 0 }];
   // Part II-A is reached only when line 17 is more than zero.
   if (v('actc.limit') > 0) {
-    yesNo('19', v('actc.earnedOverThreshold') > 0);
-    yesNo(
-      '20',
-      v('actc.childLimit') >= getParams(result.taxYear).ctc.partIIBMinimum
-    );
+    out.push({ line: '19', yes: v('actc.earnedOverThreshold') > 0 });
+    out.push({
+      line: '20',
+      yes: v('actc.childLimit') >= getParams(result.taxYear).ctc.partIIBMinimum,
+    });
   }
+  return out;
+}
+
+function fill8812(f: Filler, map: FieldMap, result: ReturnResult): void {
+  const F = map.fields ?? {};
+  for (const a of sch8812Answers(result))
+    f.check(F[`line${a.line}.${a.yes ? 'yes' : 'no'}`]!);
 }
 
 function fill8995(

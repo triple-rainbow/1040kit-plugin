@@ -370,7 +370,10 @@ test('forms_fill needs the start agreement and a review of the current facts', a
   );
   assert.ok(summary.includes(ACKNOWLEDGMENT_TEXT));
   assert.match(summary, /On 2026-02-01 .*you agreed/);
-  assert.match(summary, /You reviewed this return with return_review/);
+  assert.match(
+    summary,
+    /You reviewed this return and confirmed the numbers on 2026-02-01/
+  );
 
   // A fact change needs a new review, not a new agreement.
   const set = await profileSet(

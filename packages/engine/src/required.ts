@@ -35,6 +35,7 @@ const SCREENING: {
   key: ScreeningKey;
   question: string;
   why: string;
+  cite?: string;
 }[] = [
   {
     key: 'screening.hasDependents',
@@ -46,83 +47,89 @@ const SCREENING: {
     key: 'retirementDistributions',
     question:
       'Did you receive a 1099-R (retirement, pension or IRA distribution) this year?',
-    why: 'Retirement distributions are not supported in v1.',
+    why: '1040kit can’t include retirement distributions yet.',
   },
   {
     key: 'socialSecurityBenefits',
     question:
       'Did you receive Social Security benefits (Form SSA-1099) this year?',
-    why: 'Social Security benefits are not supported in v1.',
+    why: '1040kit can’t include Social Security benefits yet.',
   },
   {
     key: 'stockOrCryptoSales',
     question:
       'Did you sell any stocks, funds or crypto this year (Form 1099-B)?',
-    why: 'Sales of investments need Form 8949 and Schedule D, not supported in v1.',
+    why: '1040kit can’t include sales of stocks, funds or crypto yet.',
+    cite: 'Form 8949 and Schedule D',
   },
   {
     key: 'screening.hasRentalOrRoyaltyIncome',
     question:
       'Did you receive rent from a property, or royalties (for example from a book, music, or oil and gas), this year?',
-    why: 'Rents and royalties are reported on Schedule E, Part I.',
+    why: 'Rent and royalties are reported separately, with their own expenses.',
+    cite: 'Schedule E, Part I',
   },
   {
     key: 'k1Income',
     question:
       'Did you receive a Schedule K-1 from a partnership, S corporation, estate or trust?',
-    why: 'K-1 income is not supported in v1.',
+    why: '1040kit can’t include K-1 income yet.',
   },
   {
     key: 'foreignIncomeOrAccounts',
     question:
       'Did you have income from outside the U.S., pay foreign taxes, or hold foreign bank accounts?',
-    why: 'Foreign income and accounts are not supported in v1.',
+    why: '1040kit can’t include foreign income or accounts yet.',
   },
   {
     key: 'unemploymentCompensation',
     question: 'Did you receive unemployment benefits this year (Form 1099-G)?',
-    why: 'Unemployment compensation is not supported in v1.',
+    why: '1040kit can’t include unemployment benefits yet.',
   },
   {
     key: 'hsa',
     question:
       'Did you or your employer put money into a health savings account (HSA), or did you take money out of one?',
-    why: 'HSAs need Form 8889, not supported in v1.',
+    why: '1040kit can’t include health savings accounts yet.',
+    cite: 'Form 8889',
   },
   {
     key: 'educationExpenses',
     question:
       'Did you pay college tuition for yourself or a dependent and want an education credit (Form 1098-T)?',
-    why: 'Education credits need Form 8863, not supported in v1.',
+    why: '1040kit can’t include education credits yet.',
+    cite: 'Form 8863',
   },
   {
     key: 'screening.paidStudentLoanInterest',
     question: 'Did you pay interest on a student loan this year (Form 1098-E)?',
-    why: 'Student loan interest can be deducted on Schedule 1, line 21 (up to $2,500).',
+    why: 'You may be able to deduct up to $2,500 of student loan interest.',
+    cite: 'Schedule 1, line 21',
   },
   {
     key: 'wantsToItemize',
     question:
       'Do you want to itemize deductions (mortgage interest, state taxes, gifts to charity) instead of the standard deduction?',
-    why: 'Itemized deductions (Schedule A) are not supported in v1.',
+    why: '1040kit takes the standard deduction; it can’t itemize yet.',
+    cite: 'Schedule A',
   },
   {
     key: 'marriedFilingSeparately',
     question:
       'If you are married, do you plan to file separately from your spouse?',
-    why: 'Married filing separately is not supported in v1.',
+    why: '1040kit can’t prepare separate returns for a married couple yet.',
   },
   {
     key: 'other',
     question:
       'Any other income or tax situation not covered yet, such as gambling winnings, alimony, or a household employee?',
-    why: 'v1 covers a limited set of situations; anything else must be flagged, not guessed.',
+    why: 'Anything else has to be flagged now, so nothing is left out or guessed.',
   },
   {
     key: 'digitalAssetActivity',
     question:
       'Did you receive, sell, swap or otherwise dispose of any digital assets (crypto, NFTs) this year?',
-    why: 'Form 1040 asks this question; digital asset transactions are not supported in v1.',
+    why: 'Every federal return asks this. 1040kit can’t include crypto sales or swaps yet.',
   },
 ];
 
@@ -166,8 +173,7 @@ export function requiredFactsFrom(
   if (!status) {
     add({
       path: 'filingStatus',
-      question:
-        'What is your filing status: single, married filing jointly, or head of household?',
+      question: 'What is your filing status?',
       why: 'Filing status sets the standard deduction, tax brackets and credit limits.',
       blocking: true,
       priority: 0,
@@ -178,7 +184,8 @@ export function requiredFactsFrom(
     add({
       path: 'taxpayer.dateOfBirth',
       question: 'What is your date of birth?',
-      why: 'People 65 or older get a larger standard deduction and the senior deduction (Schedule 1-A).',
+      why: 'People 65 or older get a larger standard deduction and an extra senior deduction.',
+      cite: 'Schedule 1-A',
       blocking: false,
       priority: 10,
     });
@@ -197,7 +204,8 @@ export function requiredFactsFrom(
     add({
       path: 'spouse.dateOfBirth',
       question: 'What is your spouse’s date of birth?',
-      why: 'A spouse 65 or older adds to the standard deduction and can get the senior deduction (Schedule 1-A).',
+      why: 'A spouse 65 or older adds to the standard deduction and can get the senior deduction.',
+      cite: 'Schedule 1-A',
       blocking: false,
       priority: 11,
     });
@@ -208,8 +216,8 @@ export function requiredFactsFrom(
     add({
       path: 'dependents',
       question:
-        'Who is the qualifying person (a child or relative) who lived with you for more than half the year?',
-      why: 'Head of household requires a qualifying person.',
+        'Who lived with you over half the year as your qualifying person? Name, relationship, date of birth, months with you, valid SSN?',
+      why: 'Head of household needs a qualifying person, usually someone who lived with you.',
       blocking: true,
       priority: 19,
     });
@@ -220,7 +228,7 @@ export function requiredFactsFrom(
     add({
       path: 'dependents',
       question:
-        'Who lives with you or depends on you? For each person: how they are related to you and their date of birth.',
+        'Who lives with you or depends on you? For each: name, relationship, date of birth, months with you, and whether they have a valid SSN.',
       why: 'Each dependent can bring a credit; the relationship and age decide which one.',
       blocking: true,
       priority: 19,
@@ -234,7 +242,7 @@ export function requiredFactsFrom(
       add({
         path: `${base}.dateOfBirth`,
         question: `What is the date of birth of ${n}?`,
-        why: 'Age decides the child tax credit and whether they can be a qualifying child.',
+        why: 'Age decides the child tax credit and whether they count as a qualifying child.',
         blocking: true,
         priority: 20,
       });
@@ -242,7 +250,7 @@ export function requiredFactsFrom(
     if (!d.relationship) {
       add({
         path: `${base}.relationship`,
-        question: `How is ${n} related to you (child, stepchild, foster child, sibling, grandchild, niece/nephew, parent, other)?`,
+        question: `How is ${n} related to you?`,
         why: 'Relationship decides which dependency tests apply.',
         blocking: true,
         priority: 21,
@@ -268,7 +276,7 @@ export function requiredFactsFrom(
       add({
         path: `${base}.hasValidSsn`,
         question: `Does ${n} have a Social Security number valid for work, issued before the filing deadline?`,
-        why: 'The child tax credit and the earned income credit count a child only with a valid SSN; otherwise only the $500 credit for other dependents applies.',
+        why: 'A child needs a valid SSN for the child tax credit and the earned income credit; without one, the $500 credit for other dependents can still apply.',
         blocking: true,
         priority: 23,
       });
@@ -285,7 +293,7 @@ export function requiredFactsFrom(
       add({
         path: `${base}.fullTimeStudent`,
         question: `Was ${n} a full-time student for at least five months of the year?`,
-        why: 'A child 19-23 is a qualifying child only as a full-time student.',
+        why: 'A child aged 19 to 23 counts as a qualifying child only if they were a full-time student.',
         blocking: true,
         priority: 24,
       });
@@ -341,7 +349,7 @@ export function requiredFactsFrom(
           o === 'taxpayer'
             ? 'Do you have a Social Security number that is valid for work?'
             : 'Does your spouse have a Social Security number that is valid for work?',
-        why: 'The child tax credit and the tips, overtime and senior deductions require a valid SSN.',
+        why: 'A valid SSN is needed for the child tax credit and the tips, overtime and senior deductions.',
         blocking: true,
         priority: 13,
       });
@@ -360,7 +368,8 @@ export function requiredFactsFrom(
       add({
         path: `businesses[${o}]`,
         question: `What business or side gig is the 1099 income ${o === 'taxpayer' ? 'you' : 'your spouse'} received from, and what does it do?`,
-        why: 'Freelance and gig income is reported on Schedule C, where business expenses reduce it.',
+        why: 'Freelance and gig income is reported with your business, where its expenses reduce it.',
+        cite: 'Schedule C',
         blocking: true,
         priority: 30,
       });
@@ -374,8 +383,8 @@ export function requiredFactsFrom(
         path: `misc1099s[${m.id}].treatAsBusiness`,
         question: `Is the income on the 1099-MISC ${who(m.owner)} received part of a business ${who(m.owner)} run?`,
         why: rentsOrRoyalties
-          ? 'Business receipts go on Schedule C; otherwise rents and royalties go on Schedule E, Part I.'
-          : 'Business receipts go on Schedule C (with SE tax); otherwise box 3 is other income on Schedule 1.',
+          ? 'Business income goes with your business; otherwise rent and royalties are reported separately.'
+          : 'Business income goes with your business (and self-employment tax); otherwise it is other income.',
         blocking: rentsOrRoyalties,
         priority: 31,
       });
@@ -387,7 +396,8 @@ export function requiredFactsFrom(
         path: `k1099s[${k.id}].personalPortion`,
         question:
           'Was any money on the 1099-K personal, such as gifts, shared bills, or personal items sold at a loss? How much?',
-        why: 'Personal amounts reported on a 1099-K are not business income (i1040gi, Schedule 1, Form(s) 1099-K).',
+        why: 'Personal payments on a 1099-K, like friends paying you back, aren’t business income.',
+        cite: 'Form 1040 instructions, Schedule 1, Form(s) 1099-K',
         blocking: false,
         priority: 33,
       });
@@ -398,7 +408,8 @@ export function requiredFactsFrom(
       path: 'obbba.carLoanVehicle',
       question:
         'Was the car new, bought in or after 2025, assembled in the U.S., and used mainly for personal driving?',
-      why: 'Only interest on a new, U.S.-assembled personal vehicle qualifies (Schedule 1-A Part IV).',
+      why: 'Only interest on a loan for a new personal vehicle assembled in the U.S. qualifies.',
+      cite: 'Schedule 1-A, Part IV',
       blocking: true,
       priority: 40,
     });
@@ -414,7 +425,8 @@ export function requiredFactsFrom(
     add({
       path: 'rentals[<id>].misc1099Ids',
       question: `Which rental property or royalty source is the 1099-MISC with rents or royalties ${who(m.owner)} received for?`,
-      why: `Rents (box 1) and royalties (box 2) on 1099-MISC ${m.id} are reported on Schedule E with the property they come from.`,
+      why: 'Rent and royalties on a 1099-MISC are reported with the property they come from.',
+      cite: 'Schedule E; 1099-MISC boxes 1 and 2',
       blocking: true,
       priority: 32,
     });
@@ -429,7 +441,8 @@ export function requiredFactsFrom(
       path: 'rentals',
       question:
         'What rental property or royalty source did you have, and how much rent or royalties did you receive?',
-      why: 'Each rental property or royalty source is one column of Schedule E, Part I.',
+      why: 'Each property or royalty source is reported on its own.',
+      cite: 'Schedule E, Part I',
       blocking: true,
       priority: 50,
     });
@@ -444,12 +457,14 @@ export function requiredFactsFrom(
       field: string,
       question: string,
       why: string,
-      priority: number
+      priority: number,
+      cite?: string
     ) =>
       add({
         path: `${base}.${field}`,
         question,
         why,
+        ...(cite ? { cite } : {}),
         blocking: true,
         priority,
       });
@@ -457,44 +472,50 @@ export function requiredFactsFrom(
       ask(
         'propertyType',
         `What kind of property is ${n}: a house, apartment building, vacation rental, commercial, land, or royalties?`,
-        'Schedule E line 1b needs the property type; royalties follow different rules.',
-        51
+        'The kind of property decides which rules apply; royalties work differently.',
+        51,
+        'Schedule E, line 1b'
       );
     if (r.propertyType === 6) return;
     if (r.fairRentalDays === undefined)
       ask(
         'fairRentalDays',
         `How many days was ${n} rented at a fair price this year?`,
-        'Schedule E line 2: rental days decide the vacation-home rules (Pub. 527).',
-        52
+        'Rental days decide whether vacation-home rules apply.',
+        52,
+        'Schedule E, line 2; Pub. 527'
       );
     if (r.personalUseDays === undefined)
       ask(
         'personalUseDays',
         `How many days did you, your family, or anyone paying below fair rent use ${n}?`,
-        'Personal use days split the expenses and can make the property a home (Pub. 527).',
-        53
+        'Personal use splits the expenses and can make the property count as a home.',
+        53,
+        'Pub. 527'
       );
     if (r.ownsDepreciableProperty === undefined)
       ask(
         'ownsDepreciableProperty',
         `Do you own the building or equipment you rent out for ${n}, rather than subletting it?`,
-        'Owned rental property must be depreciated (Form 4562), which 1040kit does not compute yet.',
-        54
+        'A rental you own has to be depreciated, which 1040kit can’t compute yet.',
+        54,
+        'Form 4562'
       );
     if (r.priorYearUnallowedLoss === undefined)
       ask(
         'priorYearUnallowedLoss',
         'Do you have a rental loss from an earlier year that you could not deduct then (a Form 8582 carryover)?',
-        'A prior-year unallowed passive loss needs Form 8582 (i1040se, Line 22).',
-        55
+        'An earlier loss carried forward needs a form 1040kit can’t prepare yet.',
+        55,
+        'Form 8582; i1040se, Line 22'
       );
     if (realEstateNet < 0 && r.activeParticipation === undefined)
       ask(
         'activeParticipation',
         `Did you make the management decisions for ${n}, such as approving tenants, rent and repairs?`,
-        'A rental loss is deductible without Form 8582 only with active participation (Pub. 925).',
-        56
+        'A rental loss can be deducted here only if you actively managed the property.',
+        56,
+        'Pub. 925'
       );
   });
 
@@ -508,7 +529,8 @@ export function requiredFactsFrom(
       path: 'e1098s',
       question:
         'Do you have a Form 1098-E from your loan servicer? If not, how much student loan interest did you pay?',
-      why: 'Student loan interest (up to $2,500) is deducted on Schedule 1, line 21.',
+      why: 'You may be able to deduct up to $2,500 of student loan interest.',
+      cite: 'Schedule 1, line 21',
       blocking: true,
       priority: 44,
     });
@@ -519,7 +541,8 @@ export function requiredFactsFrom(
         path: 'studentLoan.legallyObligated',
         question:
           'Are you (or your spouse) the one legally required to pay the student loan, not a parent or someone else?',
-        why: 'Only interest you are legally obligated to pay is deductible (i1040gi Schedule 1 line 21; Pub. 970).',
+        why: 'Only interest you were legally required to pay counts.',
+        cite: 'Form 1040 instructions, Schedule 1 line 21; Pub. 970',
         blocking: true,
         priority: 45,
       });
@@ -528,7 +551,8 @@ export function requiredFactsFrom(
         path: 'studentLoan.qualifiedLoan',
         question:
           'Was the loan used only for college costs of you, your spouse or a dependent, and not from a relative?',
-        why: 'Only a qualified student loan counts (i1040gi Schedule 1 line 21, Qualified student loan).',
+        why: 'Only a loan taken out just to pay for education, and not from a relative, counts.',
+        cite: 'Form 1040 instructions, Schedule 1 line 21, Qualified student loan',
         blocking: true,
         priority: 46,
       });
@@ -550,7 +574,7 @@ export function requiredFactsFrom(
             o === 'taxpayer'
               ? 'Was your main home in the United States for more than half of the year?'
               : 'Was your spouse’s main home in the United States for more than half of the year?',
-          why: 'The earned income credit requires a main home (and a qualifying child’s home) in the U.S. for over half the year.',
+          why: 'The earned income credit needs your main home (and your child’s) to be in the U.S. for over half the year.',
           blocking: true,
           priority: 60,
         });
@@ -560,7 +584,8 @@ export function requiredFactsFrom(
         path: 'taxpayer.qualifyingChildOfAnother',
         question:
           'Could you be claimed as the qualifying child of another person, such as a parent you lived with, this year?',
-        why: 'You can’t take the earned income credit if you are the qualifying child of another taxpayer (i1040gi line 27a).',
+        why: 'You can’t get the earned income credit if someone else can claim you as their qualifying child.',
+        cite: 'Form 1040 instructions, line 27a',
         blocking: true,
         priority: 61,
       });
@@ -569,7 +594,8 @@ export function requiredFactsFrom(
         path: 'eitc.priorDisallowance',
         question:
           'Was your earned income credit ever reduced or denied by the IRS for a reason other than a math error?',
-        why: 'A past EIC disallowance requires Form 8862 (i1040gi, Form 8862, who must file).',
+        why: 'After an earlier denial, the credit needs an extra form that 1040kit can’t prepare yet.',
+        cite: 'Form 8862',
         blocking: true,
         priority: 62,
       });
@@ -609,6 +635,7 @@ export function requiredFactsFrom(
         path,
         question: s.question,
         why: s.why,
+        ...(s.cite ? { cite: s.cite } : {}),
         blocking: true,
         priority: 100 + i,
       });

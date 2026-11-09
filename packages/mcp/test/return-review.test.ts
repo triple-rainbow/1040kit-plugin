@@ -189,6 +189,10 @@ test('filing_prepare needs the review; the entry sheet matches the return', asyn
   assert.match(md, /- Filing status: check \*\*Single\*\*/);
   assert.match(md, /- Digital assets question: check \*\*No\*\*/);
   assert.match(md, /\| Form 1040 \| 1a \| .* \| 90,000 \|/);
+  // Free File's Step 2 needs the W-2 itself, with its withholding.
+  assert.match(md, /## Step 2: your W-2s/);
+  assert.match(md, /W-2 1: .*box 1 90000\.00; box 2 11000\.00/);
+  assert.match(md, /employer EIN \(box b\) \*\*type this yourself\*\*/);
 });
 
 test('removing an answer asks it again', async () => {
@@ -349,4 +353,21 @@ test('the dependent credit box follows the engine, not just age and SSN', () => 
     ),
     'ctc'
   );
+});
+
+test('the summary names the forms and its sources in plain words', async () => {
+  await set(identity);
+  await reviewAndConfirm();
+  assert.ok((await formsFill({ workspace: ws }, deps())).ok);
+  const md = await readFile(join(ws, 'outputs', '2025-summary.md'), 'utf8');
+  assert.match(md, /## Forms in this return\n\n- Form 1040\n/);
+  assert.doesNotMatch(md, /\bf1040\b|schC\.taxpayer|How: /);
+  assert.match(md, /- On Form 1040, line 1a/);
+  const mail = await filingPrepare({ workspace: ws, path: 'mail' }, deps());
+  assert.ok(mail.ok);
+  const instructions = await readFile(
+    join(ws, 'outputs', '2025-mailing-instructions.md'),
+    'utf8'
+  );
+  assert.match(instructions, /Attach Copy B of your W-2 /);
 });

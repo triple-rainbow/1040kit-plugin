@@ -131,7 +131,7 @@ export function mailingMarkdown(c: MailContext): string {
         `  ${i + 1}. ${a.title}${a.sequence ? ` (sequence no. ${a.sequence})` : ''}`
     ),
     c.w2Count > 0
-      ? `- Attach Copy B of each W-2 (${c.w2Count}) to the front of page 1, where the form says "Attach Form(s) W-2 here". Keep your 1099s with your records.`
+      ? `- Attach Copy B of ${c.w2Count === 1 ? 'your W-2' : `each of your ${c.w2Count} W-2s`} to the front of page 1, where the form says "Attach Form(s) W-2 here". Keep your 1099s with your records.`
       : '- No W-2s to attach. Keep your 1099s with your records.',
     ''
   );

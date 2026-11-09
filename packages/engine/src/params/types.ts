@@ -212,4 +212,6 @@ export interface YearParams {
   schEExpenseLines: Record<ScheduleEExpense, string>;
   /** Extra "<form>:<line>" -> node id lookups for lines that repeat a node's value. */
   lineAliases: Record<string, string>;
+  /** Descriptions for alias lines, keyed by "<form without owner>:<line>" (see lines.ts). */
+  lineAliasLabels: Record<string, string>;
 }
