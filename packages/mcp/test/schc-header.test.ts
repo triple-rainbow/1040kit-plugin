@@ -131,7 +131,7 @@ test('Part IV (vehicle) prints with car expenses and matches the entry sheet', a
   assert.equal(c.box('c2_7[0]'), true); // 47a yes
   assert.equal(c.box('c2_8[0]'), true); // 47b yes
   for (const entry of [
-    `Line 43, month placed in service: ${m}`,
+    `Line 43, date placed in service: ${m}/${d}/${y}`,
     'Line 44c, other miles: 4,000',
     'Line 45, available for personal use off duty: check **Yes**',
     'Line 46, another vehicle for personal use: check **No**',

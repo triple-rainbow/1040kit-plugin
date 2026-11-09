@@ -228,8 +228,7 @@ export function requiredFactsFrom(
   ) {
     add({
       path: 'dependents',
-      question:
-        'Who lives with you or depends on you? For each: name, relationship, date of birth, months with you, and whether they have a valid SSN.',
+      question: 'Who lives with you or depends on you?',
       why: 'Each dependent can bring a credit; the relationship and age decide which one.',
       blocking: true,
       priority: 19,
@@ -335,6 +334,8 @@ export function requiredFactsFrom(
     const person = o === 'taxpayer' ? facts.taxpayer : facts.spouse;
     return (
       (o === 'taxpayer' && childUnder17) ||
+      // Asked up front with the dependents, so it doesn't need a round of its own.
+      facts.screening?.hasDependents === true ||
       eic.possible ||
       (facts.obbba?.qualifiedTips?.[o] ?? 0) > 0 ||
       (facts.obbba?.qualifiedOvertime?.[o] ?? 0) > 0 ||
@@ -408,7 +409,7 @@ export function requiredFactsFrom(
     if (b.materiallyParticipated === undefined)
       ask(
         'materiallyParticipated',
-        `Did ${you}${mfj ? ' (with your spouse’s work)' : ''} work in ${theBiz} regularly, e.g. over 500 hours or nearly all the work?`,
+        `Did ${you}${mfj ? (o === 'spouse' ? ' (with your help)' : ' (with your spouse’s help)') : ''} work in ${theBiz} regularly, e.g. over 500 hours or nearly all the work?`,
         'Most people who run their own business do. If not, the business counts as passive, with loss rules 1040kit can’t handle yet.',
         'Schedule C, line G; Pub. 925, Material Participation',
         34
@@ -538,10 +539,11 @@ export function requiredFactsFrom(
         'Car expenses need records to back them up.',
         '47a'
       );
-      if (v.hasEvidence === true)
+      // Asked with 47a (ignored after a No), so it doesn't need a round of its own.
+      if (v.hasEvidence !== false)
         car(
           'evidenceWritten',
-          'Are those records written down, like a log or an app?',
+          'If you have records, are they written down, like a log or an app?',
           'The form asks whether the records are written.',
           '47b'
         );

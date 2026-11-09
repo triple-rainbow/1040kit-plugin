@@ -289,6 +289,7 @@ test('Schedule C Part IV is asked when car expenses are claimed; line 32 with a 
     'vehicleUse.availableOffDuty',
     'vehicleUse.anotherVehicle',
     'vehicleUse.hasEvidence',
+    'vehicleUse.evidenceWritten',
   ]);
   // Actual expenses also ask the business miles; 47b only after a 47a yes.
   const actual = paths(
@@ -299,6 +300,15 @@ test('Schedule C Part IV is asked when car expenses are claimed; line 32 with a 
   );
   assert.ok(actual.includes('vehicleUse.businessMiles'));
   assert.ok(actual.includes('vehicleUse.evidenceWritten'));
+  // No records: 47b is not asked.
+  assert.ok(
+    !paths(
+      facts({
+        vehicle: { businessMiles: 3000 },
+        vehicleUse: { hasEvidence: false },
+      })
+    ).includes('vehicleUse.evidenceWritten')
+  );
   assert.deepEqual(paths(facts({})), []);
   // A loss asks line 32; "No" is out of scope (Form 6198).
   const loss = facts({ expenses: { supplies: 5000000 } });
@@ -336,6 +346,6 @@ test('on a joint return with two businesses, each question names its business', 
   );
   assert.match(
     byField.get('materiallyParticipated')![0]!,
-    /with your spouse’s work/
+    /with your spouse’s help/
   );
 });

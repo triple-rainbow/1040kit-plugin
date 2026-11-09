@@ -342,7 +342,14 @@ test('a new dependent is one compact form, with room for more people', async () 
     'dependents[dependent_1].dateOfBirth',
     'dependents[dependent_1].monthsLivedWithTaxpayer',
     'dependents[dependent_1].hasValidSsn',
+    'dependents[dependent_1].providedOverHalfOwnSupport',
   ]);
+  // The filer's own SSN is asked in the same round, not after.
+  assert.ok(
+    next.questions.some(
+      (q: { path: string }) => q.path === 'taxpayer.hasValidSsn'
+    )
+  );
   assert.equal(card.answer.addAnother.nextIndex, 2);
 
   // What the form saves for two people is accepted as is.
@@ -356,6 +363,7 @@ test('a new dependent is one compact form, with room for more people', async () 
         dateOfBirth: '2018-04-01',
         monthsLivedWithTaxpayer: 12,
         hasValidSsn: true,
+        providedOverHalfOwnSupport: false,
       }[f.path.slice(f.path.lastIndexOf('.') + 1)],
       source: 'user',
     }));
@@ -404,4 +412,96 @@ test('business code goes to chat; the home area is a number and checked', async 
   });
   assert.equal(r.rejected.length, 1, JSON.stringify(r));
   assert.match(r.rejected[0].reason, /whole home/);
+});
+
+test('the vehicle card comes with deductions and credits, records questions together', async () => {
+  const init = await call('workspace_init', {
+    year: 2025,
+    path: `${env.home}/vehicle`,
+    acknowledged: true,
+  });
+  const ws = init.workspace as string;
+  const none = (
+    await call('interview_next', { workspace: ws, limit: 20 })
+  ).questions[0].answer.options.map((o: { path: string }) => ({
+    path: o.path,
+    value: false,
+    source: 'user',
+  }));
+  await call('profile_set', {
+    workspace: ws,
+    set: [
+      ...none,
+      { path: 'outOfScope.other', value: [], source: 'user' },
+      { path: 'filingStatus', value: 'single', source: 'user' },
+      { path: 'taxpayer.dateOfBirth', value: '1985-05-01', source: 'user' },
+      {
+        path: 'taxpayer.canBeClaimedAsDependent',
+        value: false,
+        source: 'user',
+      },
+      { path: 'nec1099s[nec_1].owner', value: 'taxpayer', source: 'user' },
+      {
+        path: 'nec1099s[nec_1].nonemployeeComp',
+        value: 9000000,
+        source: 'user',
+      },
+      {
+        path: 'businesses[taxpayer]',
+        value: {
+          owner: 'taxpayer',
+          name: 'Design',
+          expenses: {},
+          vehicle: { businessMiles: 3000 },
+          materiallyParticipated: true,
+          principalBusinessCode: '541430',
+          accountingMethod: 'cash',
+          startedOrAcquiredThisYear: false,
+          operatedFromHome: true,
+          madePaymentsRequiring1099: false,
+        },
+        source: 'user',
+      },
+    ],
+  });
+  let next = await call('interview_next', { workspace: ws, limit: 20 });
+  // Skip whatever income questions remain until the deductions phase.
+  for (let i = 0; i < 5 && next.phase === 'income'; i++) {
+    const set = (next.questions as { path: string; answer: { kind: string } }[])
+      .filter((q) => q.answer.kind === 'yesno')
+      .map((q) => ({ path: q.path, value: false, source: 'user' }));
+    if (!set.length) break;
+    await call('profile_set', { workspace: ws, set });
+    next = await call('interview_next', { workspace: ws, limit: 20 });
+  }
+  assert.equal(
+    next.phase,
+    'deductions',
+    JSON.stringify(next.questions.map((q: { path: string }) => q.path))
+  );
+  const card = next.questions.find(
+    (q: { path: string }) => q.path === 'vehicle:taxpayer'
+  );
+  assert.ok(
+    card,
+    JSON.stringify(next.questions.map((q: { path: string }) => q.path))
+  );
+  const fields = card.answer.fields.map((f: { path: string }) => f.path);
+  assert.ok(fields.includes('businesses[taxpayer].vehicleUse.hasEvidence'));
+  assert.ok(fields.includes('businesses[taxpayer].vehicleUse.evidenceWritten'));
+});
+
+test('the widget page script parses', async () => {
+  const r = await client.readResource({ uri: INTERVIEW_WIDGET_URI });
+  const html = (r.contents[0] as { text: string }).text;
+  const scripts = [
+    ...html.matchAll(/<script type="module">([\s\S]*?)<\/script>/g),
+  ].map((m) => m[1]!);
+  // The page's own script (the runtime is the first one). A template-string
+  // escape slip (a lost backslash) would stop the whole card from loading.
+  const page = scripts.at(-1)!.replace(/await /g, '');
+  assert.doesNotThrow(
+    () => new Function(page),
+    'widget script has a syntax error'
+  );
 });

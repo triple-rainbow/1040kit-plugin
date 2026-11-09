@@ -648,13 +648,15 @@ export function scheduleCEntries(
     const v = biz.vehicleUse ?? {};
     const d = v.placedInService?.split('-');
     if (d?.length === 3) {
+      // Three boxes on the PDF; one line on the entry sheet.
       text(
         'vehicle.placedInService.month',
         d[1],
-        'Line 43, month placed in service'
+        'Line 43',
+        `Line 43, date placed in service: ${d[1]}/${d[2]}/${d[0]}`
       );
-      text('vehicle.placedInService.day', d[2], 'Line 43, day');
-      text('vehicle.placedInService.year', d[0], 'Line 43, year');
+      text('vehicle.placedInService.day', d[2], 'Line 43', '');
+      text('vehicle.placedInService.year', d[0], 'Line 43', '');
     }
     const miles = biz.vehicle?.businessMiles ?? v.businessMiles;
     const n = (x: number | undefined) =>

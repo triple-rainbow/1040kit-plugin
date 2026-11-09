@@ -108,6 +108,10 @@ const PAGE = `<!doctype html>
   .row.saved .chip, .row.saved input { pointer-events: none; }
   .person { display: grid; gap: 12px; padding-top: 10px; border-top: 1px solid var(--line); }
   .person h2 { font-size: 13px; font-weight: 600; margin: 0; }
+  .person.first { border-top: 0; padding-top: 0; }
+  .person-head { display: flex; justify-content: space-between; align-items: center; }
+  .remove { font: inherit; font-size: 13px; border: 0; background: transparent; color: var(--muted); cursor: pointer; text-decoration: underline; }
+  .remove:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .add { font: inherit; font-size: 14px; justify-self: start; border: 1px dashed var(--line); background: transparent;
          color: var(--accent); border-radius: 999px; padding: 6px 12px; cursor: pointer; }
   .add:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -230,30 +234,55 @@ const fieldLabels = new Map(); // field path -> 'About Robin, Date of birth'
 // repeats the fields for the next dependent id.
 function groupForm(q, a, card) {
   const form = el('div', { class: 'form', role: 'group', 'aria-label': q.question });
-  const addRows = (fields, into, title) => {
+  let uid = 0;
+  const addRows = (fields, into, person) => {
     for (const f of fields) {
-      fieldLabels.set(f.path, (title || q.question) + ', ' + f.label);
-      const sub = { path: f.path, question: f.label, answer: f.answer };
-      const row = el('div', { class: 'row' }, el('span', { class: 'label' }, f.label), control(sub));
+      // For the post-save message and the "still open" list: card, person, field.
+      fieldLabels.set(f.path, { card: q.question, person, label: f.label });
+      const name = person ? person + ': ' + f.label : f.label;
+      const sub = { path: f.path, question: name, answer: f.answer };
+      const ctl = control(sub);
+      const id = 'f-' + (++uid) + '-' + Math.random().toString(36).slice(2, 7);
+      // A text, date or number box gets a real <label for>; chips are labelled by it.
+      const box = ctl.tagName === 'INPUT' ? ctl : ctl.querySelector && ctl.querySelector('input');
+      let label;
+      if (box) { box.id = id; label = el('label', { class: 'label', for: id }, f.label); }
+      else { label = el('span', { class: 'label', id }, f.label); if (ctl.setAttribute) ctl.setAttribute('aria-labelledby', id); }
+      const row = el('div', { class: 'row' }, label, ctl);
       row.dataset.path = f.path;
       into.append(row);
     }
     if (card) card.dataset.paths = JSON.stringify([...JSON.parse(card.dataset.paths || '[]'), ...fields.map((f) => f.path)]);
   };
-  addRows(a.fields, form);
   if (a.addAnother) {
+    // New people: each gets a heading, and added ones can be removed.
+    const first = el('div', { class: 'person first' }, el('h2', {}, 'Person 1'));
+    addRows(a.fields, first, 'Person 1');
+    form.append(first);
     let n = a.addAnother.nextIndex;
+    let count = 1;
     const add = el('button', { class: 'add', type: 'button' }, '+ ' + a.addAnother.label);
     add.addEventListener('click', () => {
       const id = 'dependent_' + n++;
-      const title = 'Person ' + (n - a.addAnother.nextIndex + 1);
-      const person = el('div', { class: 'person' }, el('h2', {}, title));
-      addRows(a.addAnother.fields.map((f) => ({ ...f, path: f.path.split('{id}').join(id) })), person, title);
+      const title = 'Person ' + (++count);
+      const fields = a.addAnother.fields.map((f) => ({ ...f, path: f.path.split('{id}').join(id) }));
+      const remove = el('button', { class: 'remove', type: 'button', 'aria-label': 'Remove ' + title }, 'Remove');
+      const person = el('div', { class: 'person' }, el('div', { class: 'person-head' }, el('h2', {}, title), remove));
+      addRows(fields, person, title);
+      remove.addEventListener('click', () => {
+        const paths = new Set(fields.map((f) => f.path));
+        for (const p of paths) { answers.delete(p); fieldLabels.delete(p); }
+        if (card) card.dataset.paths = JSON.stringify(JSON.parse(card.dataset.paths || '[]').filter((p) => !paths.has(p)));
+        person.remove();
+        refreshBar();
+        add.focus();
+      });
       form.insertBefore(person, add);
-      person.querySelector('input, button')?.focus();
+      const firstInput = person.querySelector('.row input, .row button');
+      if (firstInput) firstInput.focus();
     });
     form.append(add);
-  }
+  } else addRows(a.fields, form);
   return form;
 }
 
@@ -376,7 +405,7 @@ async function save() {
   for (const [path, why] of rejectedPaths) {
     rejected.set(questionPathFor(path), why);
     const c = cardFor(path);
-    if (c) { const e = c.querySelector('.err'); e.textContent = (fieldLabels.get(path) ? fieldLabels.get(path) + ': ' : '') + why; e.hidden = false; }
+    if (c) { const e = c.querySelector('.err'); e.textContent = (fieldLabels.get(path) ? fieldLabels.get(path).label + ': ' : '') + why; e.hidden = false; }
   }
   const saved = entries.filter(([p, a]) => !(a.sets ? a.sets.some((x) => rejectedPaths.has(x.path)) : rejectedPaths.has(p)));
   for (const [p] of saved) {
@@ -402,16 +431,41 @@ async function save() {
   const lines = saved.map(([p, a]) => {
     const q = questions.find((x) => x.path === p);
     if (q && q.answer && q.answer.kind === 'multiselect') return '- Situations that apply: ' + a.label;
-    if (fieldLabels.has(p)) return '- ' + fieldLabels.get(p) + ': ' + a.label;
+    if (fieldLabels.has(p)) return null; // grouped below, one line per card
     return '- ' + (q ? q.question : p) + ' ' + a.label;
-  });
+  }).filter(Boolean);
+  // A grouped card: one line per card (and person), its fields after it.
+  const byCard = new Map();
+  for (const [p, a] of saved) {
+    const f = fieldLabels.get(p);
+    if (!f) continue;
+    const head = f.person ? f.card.replace(/\\?$/, '') + ' — ' + f.person : f.card;
+    byCard.set(head, [...(byCard.get(head) || []), f.label + ': ' + a.label]);
+  }
+  for (const [head, parts] of byCard) lines.push('- ' + head + ': ' + parts.join('; '));
   statusEl.textContent = saved.length ? 'Saved ' + saved.length + '.' : '';
   refreshBar();
   if (!saved.length) return;
-  const open = [...root.querySelectorAll('section.q')].filter((c) => !c.classList.contains('saved')).length;
+  // Name what's still open, field by field, so the assistant knows what to ask.
+  // Short field names are listed; a card of full questions gets a count.
+  // Anything the card can't take is named, so it gets asked in chat.
+  const still = [];
+  for (const c of root.querySelectorAll('section.q')) {
+    if (c.classList.contains('saved')) continue;
+    const rows = [...c.querySelectorAll('.row')].filter((r) => !r.classList.contains('saved'));
+    if (!c.querySelector('.row')) { still.push(c.getAttribute('aria-label')); continue; }
+    const open = rows.map((r) => ({ f: fieldLabels.get(r.dataset.path), chat: !!r.querySelector('.note') })).filter((x) => x.f);
+    const chat = open.filter((x) => x.chat).map((x) => x.f.label.replace(/\\?.*$/, '') + ' (answer in chat)');
+    if (open.every((x) => x.f.label.length <= 45)) {
+      for (const x of open) still.push((x.f.person ? x.f.person + ' ' : '') + x.f.label + (x.chat ? ' (answer in chat)' : ''));
+    } else {
+      const n = open.length;
+      still.push(c.getAttribute('aria-label') + ': ' + n + (n === 1 ? ' question' : ' questions') + (chat.length ? ', including ' + chat.join(', ') : ''));
+    }
+  }
   const text = 'I answered in the 1040kit card (saved with profile_set):\\n' + lines.join('\\n') +
     (rejected.size ? '\\nSome answers were not accepted; I will fix them in the card.'
-      : open ? '\\n' + open + (open === 1 ? ' question in the card is' : ' questions in the card are') + ' still unanswered; I will answer them there.'
+      : still.length ? '\\nStill open: ' + still.join('; ') + '.'
       : '\\nPlease continue.');
   const caps = app.getHostCapabilities() || {};
   try {

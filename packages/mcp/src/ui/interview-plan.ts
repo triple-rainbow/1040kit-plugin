@@ -32,6 +32,8 @@ export const PHASES: Record<Phase, { title: string; intro: string }> = {
 };
 
 const DEDUCTION_PATHS = [
+  // Part IV follows a car expense claimed while finding deductions.
+  /\.vehicleUse\./,
   /^obbba\./,
   /^e1098s/,
   /^studentLoan\./,
@@ -235,6 +237,7 @@ function newPersonFields(id: string): GroupField[] {
     f(`${base}.dateOfBirth`, 'dateOfBirth'),
     f(`${base}.monthsLivedWithTaxpayer`, 'monthsLivedWithTaxpayer'),
     f(`${base}.hasValidSsn`, 'hasValidSsn'),
+    f(`${base}.providedOverHalfOwnSupport`, 'providedOverHalfOwnSupport'),
   ];
 }
 

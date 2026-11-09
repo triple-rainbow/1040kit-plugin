@@ -395,6 +395,13 @@ test('a spouse’s W-2 is left out of a single return’s filing package', async
     'utf8'
   );
   assert.match(mail, /Attach Copy B of your W-2 /);
+  const review = await returnReview({ workspace: ws }, deps());
+  assert.ok(review.ok);
+  assert.match(review.confirmWithUser[0]!, /includes 1 W-2[^s]/);
+  assert.ok(
+    review.attention.some((a) => a.code === 'forms:spouse_left_out'),
+    JSON.stringify(review.attention)
+  );
 });
 
 test('a result computed by an older 1040kit must be computed again', async () => {
