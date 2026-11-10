@@ -10,7 +10,8 @@
       "hasValidSsn": true,
       "canBeClaimedAsDependent": false,
       "livedInUsOverHalfYear": true,
-      "qualifyingChildOfAnother": false
+      "qualifyingChildOfAnother": false,
+      "blind": false
     },
     "dependents": [],
     "w2s": [
@@ -54,7 +55,8 @@
           "insurance": 30000,
           "utilities": 120000,
           "other": 1200000
-        }
+        },
+        "expensesReviewed": true
       }
     ],
     "outOfScope": {
@@ -74,7 +76,8 @@
     "screening": {
       "hasDependents": false,
       "hasRentalOrRoyaltyIncome": true,
-      "paidStudentLoanInterest": false
+      "paidStudentLoanInterest": false,
+      "paidEstimatedTax": false
     },
     "eitc": {
       "priorDisallowance": false

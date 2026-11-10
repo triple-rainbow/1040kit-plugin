@@ -8,13 +8,15 @@
       "id": "taxpayer",
       "dateOfBirth": "1958-04-01",
       "hasValidSsn": true,
-      "canBeClaimedAsDependent": false
+      "canBeClaimedAsDependent": false,
+      "blind": false
     },
     "spouse": {
       "id": "spouse",
       "dateOfBirth": "1959-09-15",
       "hasValidSsn": true,
-      "canBeClaimedAsDependent": false
+      "canBeClaimedAsDependent": false,
+      "blind": false
     },
     "dependents": [],
     "w2s": [
@@ -42,7 +44,10 @@
     "k1099s": [],
     "businesses": [],
     "e1098s": [],
-    "rentals": []
+    "rentals": [],
+    "screening": {
+      "paidEstimatedTax": false
+    }
   },
   "expect": {
     "agi": 62000,

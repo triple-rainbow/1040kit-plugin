@@ -8,7 +8,8 @@
       "id": "taxpayer",
       "dateOfBirth": "1978-01-01",
       "hasValidSsn": true,
-      "canBeClaimedAsDependent": false
+      "canBeClaimedAsDependent": false,
+      "blind": false
     },
     "dependents": [],
     "w2s": [
@@ -39,7 +40,8 @@
       {
         "owner": "spouse",
         "name": "Example Consulting",
-        "expenses": {}
+        "expenses": {},
+        "expensesReviewed": true
       }
     ],
     "e1098s": [],
@@ -48,7 +50,11 @@
       "id": "spouse",
       "dateOfBirth": "1979-01-01",
       "hasValidSsn": true,
-      "canBeClaimedAsDependent": false
+      "canBeClaimedAsDependent": false,
+      "blind": false
+    },
+    "screening": {
+      "paidEstimatedTax": false
     }
   },
   "expect": {

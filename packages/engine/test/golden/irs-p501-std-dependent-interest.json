@@ -8,7 +8,8 @@
       "id": "taxpayer",
       "dateOfBirth": "2009-03-01",
       "hasValidSsn": true,
-      "canBeClaimedAsDependent": true
+      "canBeClaimedAsDependent": true,
+      "blind": false
     },
     "dependents": [],
     "w2s": [
@@ -36,7 +37,10 @@
     "k1099s": [],
     "businesses": [],
     "e1098s": [],
-    "rentals": []
+    "rentals": [],
+    "screening": {
+      "paidEstimatedTax": false
+    }
   },
   "expect": {
     "standardDeduction": 1350

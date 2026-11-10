@@ -16,7 +16,10 @@ import type { MissingFact } from '@1040kit/engine';
 
 import { answerSpec, type AnswerSpec } from './answers.ts';
 
-export type Phase = 'income' | 'deductions';
+export type Phase = 'income' | 'deductions' | 'payments';
+
+/** The order the interview moves through; it never goes back on its own. */
+export const PHASE_ORDER: Phase[] = ['income', 'deductions', 'payments'];
 
 export const PHASES: Record<Phase, { title: string; intro: string }> = {
   income: {
@@ -29,11 +32,19 @@ export const PHASES: Record<Phase, { title: string; intro: string }> = {
     intro:
       'Your income is done. Now we work on lowering your taxable income and your tax: deductions and credits. These questions take a little patience, and each one can reduce what you owe or raise your refund.',
   },
+  payments: {
+    title: 'Tax you already paid',
+    intro:
+      'Last part: tax you already paid for the year, such as estimated payments. Each payment lowers what you owe. Payment confirmations saved in the inbox folder are read for you.',
+  },
 };
+
+const PAYMENT_PATHS = [/^payments\./, /^screening\.paidEstimatedTax$/];
 
 const DEDUCTION_PATHS = [
   // Part IV follows a car expense claimed while finding deductions.
   /\.vehicleUse\./,
+  /\.expensesReviewed$/,
   /^obbba\./,
   /^e1098s/,
   /^studentLoan\./,
@@ -43,6 +54,7 @@ const DEDUCTION_PATHS = [
 ];
 
 export function phaseOf(path: string): Phase {
+  if (PAYMENT_PATHS.some((r) => r.test(path))) return 'payments';
   return DEDUCTION_PATHS.some((r) => r.test(path)) ? 'deductions' : 'income';
 }
 
@@ -119,7 +131,40 @@ export const SITUATIONS_PATH = 'situations';
 export interface GroupField {
   path: string;
   label: string;
-  answer: AnswerSpec;
+  answer: AnswerSpec | SwapAnswer;
+  /** Heading the field sits under ("Main filer", "Spouse", "Home address"). */
+  section?: string;
+  /** Already known (e.g. a name read from a document): shown filled in, saved as confirmed. */
+  value?: unknown;
+  /** Saved with `value` but not shown (e.g. the owner of a single filer's rental). */
+  hidden?: true;
+  /** May be left empty (an apartment number). */
+  optional?: true;
+  /** Shown (and saved) only while another field of the form has this answer. */
+  showIf?: { path: string; equals?: unknown; notEquals?: unknown };
+}
+
+/**
+ * The main-filer check box on a joint return: checked saves
+ * `{ path: 'mainFiler', value: 'spouse' }`, which swaps the two people (and
+ * everything each owns) before the form's other fields are saved, so those
+ * describe the people as shown after the swap.
+ */
+export interface SwapAnswer {
+  kind: 'swap';
+  label: string;
+  /** The two sections whose fields trade places when it is checked. */
+  sections: [string, string];
+}
+
+/** A checklist of amounts: tick what applies, enter each total. */
+export interface ChecklistAnswer {
+  kind: 'checklist';
+  items: { path: string; label: string; hint?: string; value?: number }[];
+  /** Saved with every answer, so the step counts as done (unticked items are $0). */
+  done: { path: string; value: true };
+  noneLabel: string;
+  note?: string;
 }
 
 export type PlannedAnswer =
@@ -134,9 +179,18 @@ export type PlannedAnswer =
       /** Several facts about one thing (a dependent, a business), asked as one form. */
       kind: 'group';
       fields: GroupField[];
-      /** For new people: the same fields again for the next id ("{id}" in each path). */
-      addAnother?: { label: string; fields: GroupField[]; nextIndex: number };
-    };
+      /** For new people or properties: the same fields again for the next id ("{id}" in each path). */
+      addAnother?: {
+        label: string;
+        fields: GroupField[];
+        nextIndex: number;
+        /** "{id}" becomes idPrefix + index: "dependent_3", "rental_2". */
+        idPrefix: string;
+        /** Heading of each repeated block: "Person 2", "Property 2". */
+        heading: string;
+      };
+    }
+  | ChecklistAnswer;
 
 export interface PlannedQuestion {
   path: string;
@@ -183,10 +237,9 @@ export function planQuestions(
       },
     });
   }
-  const order: Phase[] = ['income', 'deductions'];
   return out.sort(
     (a, b) =>
-      order.indexOf(a.phase) - order.indexOf(b.phase) ||
+      PHASE_ORDER.indexOf(a.phase) - PHASE_ORDER.indexOf(b.phase) ||
       Number(b.blocking) - Number(a.blocking) ||
       a.priority - b.priority
   );
@@ -199,6 +252,7 @@ const GROUP_WHY: Record<string, string> = {
   business: 'Your business form (Schedule C) asks these about the business.',
   vehicle:
     'Your business form asks these when you claim car or truck expenses.',
+  rental: 'Your rental form (Schedule E) asks these about the property.',
 };
 
 /** Short labels for fields shown inside a group (the engine's question otherwise). */
@@ -260,7 +314,14 @@ export function groupQuestions(
   >();
   const out: PlannedQuestion[] = [];
   const keyOf = (q: PlannedQuestion): [string, string] | null => {
-    let m = /^dependents\[([^\]]+)\]\./.exec(q.path);
+    // Checklists and forms built from the workspace stay cards of their own.
+    if (q.answer.kind === 'checklist' || q.answer.kind === 'group') return null;
+    let m = /^rentals\[(rental_\d+)\]\./.exec(q.path);
+    if (m) {
+      const n = Number(m[1]!.slice('rental_'.length));
+      return [`rental:${m[1]}`, `About property ${n}`];
+    }
+    m = /^dependents\[([^\]]+)\]\./.exec(q.path);
     if (m) {
       const i = ctx.dependentIds.indexOf(m[1]!);
       const name = ctx.names[m[1]!] ?? `your dependent #${i + 1}`;
@@ -294,6 +355,8 @@ export function groupQuestions(
             label: 'Add another person',
             fields: newPersonFields('{id}'),
             nextIndex: next + 1,
+            idPrefix: 'dependent_',
+            heading: 'Person',
           },
         },
       });

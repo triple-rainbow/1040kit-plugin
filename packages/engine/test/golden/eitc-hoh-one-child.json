@@ -10,7 +10,8 @@
       "hasValidSsn": true,
       "canBeClaimedAsDependent": false,
       "livedInUsOverHalfYear": true,
-      "qualifyingChildOfAnother": false
+      "qualifyingChildOfAnother": false,
+      "blind": false
     },
     "dependents": [
       {
@@ -58,7 +59,8 @@
     "digitalAssetActivity": false,
     "screening": {
       "hasRentalOrRoyaltyIncome": false,
-      "paidStudentLoanInterest": false
+      "paidStudentLoanInterest": false,
+      "paidEstimatedTax": false
     },
     "eitc": {
       "priorDisallowance": false

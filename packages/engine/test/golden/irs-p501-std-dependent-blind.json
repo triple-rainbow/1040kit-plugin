@@ -37,7 +37,10 @@
     "k1099s": [],
     "businesses": [],
     "e1098s": [],
-    "rentals": []
+    "rentals": [],
+    "screening": {
+      "paidEstimatedTax": false
+    }
   },
   "expect": {
     "standardDeduction": 5350

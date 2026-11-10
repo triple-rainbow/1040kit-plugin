@@ -153,7 +153,21 @@ test('interview_next skips answered facts', async () => {
   await profileSet(
     {
       workspace: ws,
-      set: [{ path: 'filingStatus', value: 'single', source: 'user' }],
+      set: [
+        { path: 'filingStatus', value: 'single', source: 'user' },
+        ...[
+          ['identity.taxpayer.firstName', 'Pat'],
+          ['identity.taxpayer.lastName', 'Example'],
+          ['identity.address.street', '1 Main St'],
+          ['identity.address.city', 'Austin'],
+          ['identity.address.state', 'TX'],
+          ['identity.address.zip', '78701'],
+        ].map(([path, value]) => ({
+          path: path!,
+          value: value!,
+          source: 'user' as const,
+        })),
+      ],
     },
     deps
   );

@@ -13,7 +13,7 @@ import {
   statusOf,
 } from './facts.ts';
 import { eicChildren, isEicQualifyingChild } from './forms/eic.ts';
-import { rentalsOnReturn } from './forms/schE.ts';
+import { rentalMiscIds, rentalsOnReturn } from './forms/schE.ts';
 import { getParams } from './params/index.ts';
 import { eicCompleted } from './tax/eic.ts';
 import type {
@@ -134,6 +134,14 @@ const SCREENING: {
   },
 ];
 
+/** "$1,500.00": an amount in cents, written out for a question (no arithmetic). */
+function formatCents(c: number): string {
+  const sign = c < 0 ? '-' : '';
+  const abs = Math.abs(c);
+  const whole = Math.floor(abs / 100).toLocaleString('en-US');
+  return `${sign}$${whole}.${String(abs % 100).padStart(2, '0')}`;
+}
+
 function who(owner: PersonId): string {
   return owner === 'taxpayer' ? 'you' : 'your spouse';
 }
@@ -209,6 +217,29 @@ export function requiredFactsFrom(
       cite: 'Schedule 1-A',
       blocking: false,
       priority: 11,
+    });
+  }
+
+  // Blindness adds to the standard deduction. Most filers answer no, so it
+  // is never blocking (the 1040kit card shows it as one small check box).
+  if (facts.taxpayer.blind === undefined) {
+    add({
+      path: 'taxpayer.blind',
+      question: 'Are you legally blind (most people aren’t)?',
+      why: 'A legally blind filer gets a larger standard deduction.',
+      cite: 'Form 1040 instructions, line 12e; Pub. 501',
+      blocking: false,
+      priority: 14,
+    });
+  }
+  if (statusOf(facts) === 'mfj' && facts.spouse?.blind === undefined) {
+    add({
+      path: 'spouse.blind',
+      question: 'Is your spouse legally blind (most people aren’t)?',
+      why: 'A legally blind spouse adds to the standard deduction.',
+      cite: 'Form 1040 instructions, line 12e; Pub. 501',
+      blocking: false,
+      priority: 14,
     });
   }
 
@@ -470,6 +501,14 @@ export function requiredFactsFrom(
         'Schedule C, line E',
         37
       );
+    if (b.expensesReviewed === undefined)
+      ask(
+        'expensesReviewed',
+        `Which of these did ${theBiz} pay for in ${year}? Enter the total for each.`,
+        'Each business expense lowers the profit you pay income tax and self-employment tax on. Keep the receipts, invoices or statements; you don’t send them with the return.',
+        'Schedule C, Part II; Pub. 334',
+        40
+      );
     if (node(`schC.netProfit.${o}`) < 0 && b.allInvestmentAtRisk === undefined)
       ask(
         'allInvestmentAtRisk',
@@ -602,25 +641,29 @@ export function requiredFactsFrom(
 
   // 1099-MISC rents/royalties that are not business receipts must belong to a Schedule E property.
   const rentals = rentalsOnReturn(facts);
-  const linked = new Set(rentals.flatMap((r) => r.misc1099Ids ?? []));
-  for (const m of ownedOnReturn(facts, facts.misc1099s)) {
-    if (m.treatAsBusiness !== false) continue;
-    if ((m.rents ?? 0) <= 0 && (m.royalties ?? 0) <= 0) continue;
-    if (linked.has(m.id)) continue;
+  const linked = new Set(rentals.flatMap((r) => rentalMiscIds(facts, r)));
+  const unlinked = ownedOnReturn(facts, facts.misc1099s).filter(
+    (m) =>
+      m.treatAsBusiness === false &&
+      ((m.rents ?? 0) > 0 || (m.royalties ?? 0) > 0) &&
+      !linked.has(m.id)
+  );
+  // With no property yet, ask for it first; then which one each 1099-MISC is for.
+  for (const m of rentals.length > 0 ? unlinked : []) {
     add({
-      path: 'rentals[<id>].misc1099Ids',
+      path: `misc1099s[${m.id}].rentalId`,
       question: `Which rental property or royalty source is the 1099-MISC with rents or royalties ${who(m.owner)} received for?`,
       why: 'Rent and royalties on a 1099-MISC are reported with the property they come from.',
       cite: 'Schedule E; 1099-MISC boxes 1 and 2',
       blocking: true,
-      priority: 32,
+      priority: 56,
     });
   }
 
   // Schedule E.
   if (
-    facts.screening?.hasRentalOrRoyaltyIncome === true &&
-    rentals.length === 0
+    rentals.length === 0 &&
+    (facts.screening?.hasRentalOrRoyaltyIncome === true || unlinked.length > 0)
   ) {
     add({
       path: 'rentals',
@@ -660,6 +703,14 @@ export function requiredFactsFrom(
         'The kind of property decides which rules apply; royalties work differently.',
         51,
         'Schedule E, line 1b'
+      );
+    if (r.expensesReviewed === undefined)
+      ask(
+        'expensesReviewed',
+        `Which expenses did you pay for ${n}? Enter the total for each.`,
+        'Rental expenses lower the rent you pay tax on. Keep the receipts and statements; you don’t send them with the return.',
+        58,
+        'Schedule E, lines 5-19; Pub. 527'
       );
     if (r.propertyType === 6) return;
     if (r.fairRentalDays === undefined)
@@ -793,6 +844,51 @@ export function requiredFactsFrom(
           m.why = `${m.why} Without a qualifying child, the earned income credit needs you (or your spouse) to be 25 to 64.`;
         }
       }
+    }
+  }
+
+  // Tax already paid during the year (Form 1040 line 26).
+  const receipts = facts.estimatedPayments ?? [];
+  const paidEstimated = facts.screening?.paidEstimatedTax;
+  if (paidEstimated === undefined && receipts.length === 0) {
+    add({
+      path: 'screening.paidEstimatedTax',
+      question: `Did you${status === 'mfj' ? ' or your spouse' : ''} pay estimated tax for ${year} (Form 1040-ES, Direct Pay, EFTPS), or apply part of your ${year - 1} refund to it?`,
+      why: 'Tax you paid during the year lowers what you owe now. Save any payment confirmations in the inbox folder and 1040kit reads them.',
+      cite: 'Form 1040, line 26; Form 1040-ES',
+      blocking: true,
+      priority: 70,
+    });
+  }
+  if (paidEstimated === true || receipts.length > 0) {
+    if (facts.payments?.estimatedTaxPayments === undefined) {
+      const list = receipts
+        .map((p) => `${formatCents(p.amount)}${p.date ? ` on ${p.date}` : ''}`)
+        .join(', ');
+      add({
+        path: 'payments.estimatedTaxPayments',
+        question:
+          receipts.length > 0
+            ? `Besides the payment receipts in your documents, did you pay any other estimated tax for ${year}? Enter the total, or 0.`
+            : `What was the total of your estimated tax payments for ${year}, including one made in January ${year + 1}?`,
+        why:
+          receipts.length > 0
+            ? `Receipts read from your documents: ${list}. Every payment for the year lowers what you owe.`
+            : `Every payment for the year lowers what you owe. Don’t count last year’s refund applied to ${year}; that is asked next.`,
+        cite: 'Form 1040, line 26; Form 1040-ES',
+        blocking: true,
+        priority: 71,
+      });
+    }
+    if (facts.payments?.priorYearOverpaymentApplied === undefined) {
+      add({
+        path: 'payments.priorYearOverpaymentApplied',
+        question: `How much of your ${year - 1} refund did you apply to your ${year} estimated tax? Enter 0 if none.`,
+        why: `A refund you applied to this year counts as a payment. It is on your ${year - 1} Form 1040, line 36.`,
+        cite: 'Form 1040, line 26',
+        blocking: true,
+        priority: 72,
+      });
     }
   }
 

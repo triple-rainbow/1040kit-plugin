@@ -25,6 +25,7 @@ export function makeFacts(
       dateOfBirth: '1990-05-01',
       hasValidSsn: true,
       canBeClaimedAsDependent: false,
+      blind: false,
     },
     ...patch,
   };
@@ -96,4 +97,5 @@ export const screeningNo: Screening = {
   hasDependents: false,
   hasRentalOrRoyaltyIncome: false,
   paidStudentLoanInterest: false,
+  paidEstimatedTax: false,
 };

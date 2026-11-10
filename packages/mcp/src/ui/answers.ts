@@ -10,7 +10,9 @@ import { taxFactsSchema } from '../store/facts-schema.ts';
 
 export type AnswerSpec =
   | { kind: 'yesno' }
-  | { kind: 'choice'; options: { value: string; label: string }[] }
+  | { kind: 'choice'; options: { value: string | number; label: string }[] }
+  /** One check box: checked saves true, unchecked false (e.g. "Legally blind"). */
+  | { kind: 'check'; label: string }
   | { kind: 'amount' }
   | { kind: 'date' }
   | { kind: 'number'; min?: number; max?: number }

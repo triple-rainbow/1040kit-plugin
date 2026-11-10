@@ -162,6 +162,22 @@ export function r1099Pdf() {
   ]);
 }
 
+/** An IRS Direct Pay confirmation (synthetic). */
+export function estPaymentPdf(
+  o: { amount?: string; date?: string; period?: string; reason?: string } = {}
+) {
+  return textPdf([
+    'IRS Direct Pay',
+    'Payment Confirmation',
+    `Reason for Payment: ${o.reason ?? 'Estimated Tax'}`,
+    `Apply Payment To: ${o.reason === 'Extension' ? '4868' : '1040ES'}`,
+    `Tax Period for Payment: ${o.period ?? '2025'}`,
+    `Payment Amount: $${o.amount ?? '1,500.00'}`,
+    `Payment Date: ${o.date ?? '04/15/2025'}`,
+    'Confirmation Number: 0000-0000-0000',
+  ]);
+}
+
 export function randomPdf() {
   return textPdf([
     'Grocery list',

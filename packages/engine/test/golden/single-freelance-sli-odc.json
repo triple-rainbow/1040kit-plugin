@@ -7,7 +7,8 @@
       "id": "taxpayer",
       "canBeClaimedAsDependent": false,
       "dateOfBirth": "1995-11-01",
-      "hasValidSsn": true
+      "hasValidSsn": true,
+      "blind": false
     },
     "dependents": [
       {
@@ -87,7 +88,8 @@
           "anotherVehicle": false,
           "hasEvidence": true,
           "evidenceWritten": true
-        }
+        },
+        "expensesReviewed": true
       }
     ],
     "rentals": [],
@@ -107,7 +109,8 @@
     "digitalAssetActivity": false,
     "screening": {
       "hasRentalOrRoyaltyIncome": false,
-      "paidStudentLoanInterest": true
+      "paidStudentLoanInterest": true,
+      "paidEstimatedTax": false
     },
     "filingStatus": "single",
     "studentLoan": {

@@ -8,7 +8,8 @@
       "id": "taxpayer",
       "dateOfBirth": "1987-06-21",
       "hasValidSsn": true,
-      "canBeClaimedAsDependent": false
+      "canBeClaimedAsDependent": false,
+      "blind": false
     },
     "dependents": [],
     "w2s": [
@@ -47,11 +48,15 @@
         "name": "Weekend deliveries",
         "expenses": {
           "supplies": 50000
-        }
+        },
+        "expensesReviewed": true
       }
     ],
     "e1098s": [],
-    "rentals": []
+    "rentals": [],
+    "screening": {
+      "paidEstimatedTax": false
+    }
   },
   "expect": {
     "schC.grossReceipts.taxpayer": 14000,

@@ -14,7 +14,7 @@ import {
   statusOf,
 } from '../facts.ts';
 import { f8829Businesses } from '../forms/f8829.ts';
-import { planRentals, rentalsOnReturn } from '../forms/schE.ts';
+import { planRentals, rentalMiscIds, rentalsOnReturn } from '../forms/schE.ts';
 import { mulRate, toDollars } from '../money.ts';
 import { getParams } from '../params/index.ts';
 import type {
@@ -324,7 +324,7 @@ export function reviewChecks(
         nodeIds: [`schE.fairRentalDays.${r.id}`],
       });
     }
-    for (const id of r.misc1099Ids ?? []) {
+    for (const id of rentalMiscIds(facts, r)) {
       const m = facts.misc1099s.find((x) => x.id === id);
       if (!m) {
         out.push({
@@ -345,7 +345,7 @@ export function reviewChecks(
   }
   const linkCount = new Map<string, number>();
   for (const r of facts.rentals ?? [])
-    for (const id of r.misc1099Ids ?? [])
+    for (const id of rentalMiscIds(facts, r))
       linkCount.set(id, (linkCount.get(id) ?? 0) + 1);
   for (const [id, count] of linkCount) {
     if (count > 1)
@@ -353,6 +353,15 @@ export function reviewChecks(
         severity: 'error',
         code: 'misc_linked_twice',
         message: `1099-MISC ${id} is linked to ${count} rental properties, so it would be counted twice.`,
+        nodeIds: ['schE.totalRents'],
+      });
+  }
+  for (const m of facts.misc1099s ?? []) {
+    if (m.rentalId && !(facts.rentals ?? []).some((r) => r.id === m.rentalId))
+      out.push({
+        severity: 'error',
+        code: 'misc_rental_missing',
+        message: `1099-MISC ${m.id} is linked to rental ${m.rentalId}, which is not on the return.`,
         nodeIds: ['schE.totalRents'],
       });
   }

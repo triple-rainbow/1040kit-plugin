@@ -348,11 +348,15 @@ export function f1040Nodes(facts: TaxFacts, params: YearParams): NodeDef[] {
       id: 'estimatedPayments',
       label: 'Estimated tax payments and amount applied from prior year',
       deps: [],
-      formula: 'estimated payments + prior-year overpayment applied',
+      formula:
+        'estimated payments (receipts + others) + prior-year overpayment applied',
       cite: [L('26')],
       compute: (ctx) =>
         toDollars(
           sumCents([
+            ...(ctx.facts.estimatedPayments ?? []).map((p) =>
+              ctx.cents(`estimatedPayments[${p.id}].amount`)
+            ),
             ctx.cents('payments.estimatedTaxPayments'),
             ctx.cents('payments.priorYearOverpaymentApplied'),
           ])

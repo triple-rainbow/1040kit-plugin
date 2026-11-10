@@ -8,13 +8,15 @@
       "id": "taxpayer",
       "dateOfBirth": "1979-03-14",
       "hasValidSsn": true,
-      "canBeClaimedAsDependent": false
+      "canBeClaimedAsDependent": false,
+      "blind": false
     },
     "spouse": {
       "id": "spouse",
       "dateOfBirth": "1981-08-08",
       "hasValidSsn": true,
-      "canBeClaimedAsDependent": false
+      "canBeClaimedAsDependent": false,
+      "blind": false
     },
     "dependents": [],
     "w2s": [],
@@ -40,14 +42,16 @@
         "name": "Consulting",
         "expenses": {
           "advertising": 500000
-        }
+        },
+        "expensesReviewed": true
       },
       {
         "owner": "spouse",
         "name": "Tutoring",
         "expenses": {
           "supplies": 200000
-        }
+        },
+        "expensesReviewed": true
       }
     ],
     "adjustments": {
@@ -56,10 +60,14 @@
       }
     },
     "payments": {
-      "estimatedTaxPayments": 1500000
+      "estimatedTaxPayments": 1500000,
+      "priorYearOverpaymentApplied": 0
     },
     "e1098s": [],
-    "rentals": []
+    "rentals": [],
+    "screening": {
+      "paidEstimatedTax": true
+    }
   },
   "expect": {
     "schC.netProfit.taxpayer": 75000,

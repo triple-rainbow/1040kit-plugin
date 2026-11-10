@@ -223,6 +223,7 @@ test('Schedule C header items and line 30(a) are asked for each business', () =>
     ['startedOrAcquiredThisYear', true],
     ['operatedFromHome', true],
     ['madePaymentsRequiring1099', true],
+    ['expensesReviewed', true],
   ]);
   const answered = {
     materiallyParticipated: true,
@@ -231,6 +232,7 @@ test('Schedule C header items and line 30(a) are asked for each business', () =>
     startedOrAcquiredThisYear: false,
     operatedFromHome: true,
     madePaymentsRequiring1099: false,
+    expensesReviewed: true,
   };
   assert.deepEqual(paths(facts(answered)), []);
   // Follow-ups: line J after an "I: Yes", the method after "Other", 30(a).
@@ -259,6 +261,7 @@ test('Schedule C Part IV is asked when car expenses are claimed; line 32 with a 
     startedOrAcquiredThisYear: false,
     operatedFromHome: true,
     madePaymentsRequiring1099: false,
+    expensesReviewed: true,
   };
   const facts = (
     biz: Partial<TaxFacts['businesses'][number]>,

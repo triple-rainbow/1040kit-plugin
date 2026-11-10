@@ -38,6 +38,8 @@ const NONE_APPLY = [
   'screening.hasDependents',
   'screening.hasRentalOrRoyaltyIncome',
   'screening.paidStudentLoanInterest',
+  'screening.paidEstimatedTax',
+  'taxpayer.blind',
   'outOfScope.retirementDistributions',
   'outOfScope.socialSecurityBenefits',
   'outOfScope.stockOrCryptoSales',
@@ -199,10 +201,11 @@ test('removing an answer asks it again', async () => {
   await set([{ path: 'filingStatus', value: null }]);
   const next = await interviewNext({ workspace: ws, limit: 20 }, deps());
   assert.ok(next.ok);
-  assert.ok(
-    next.questions.some((q) => q.path === 'filingStatus'),
-    JSON.stringify(next.questions.map((q) => q.path))
+  // Filing status is asked on the household form.
+  const paths = next.questions.flatMap((q) =>
+    q.answer.kind === 'group' ? q.answer.fields.map((f) => f.path) : [q.path]
   );
+  assert.ok(paths.includes('filingStatus'), JSON.stringify(paths));
 });
 
 test('a review lists open deductions once, not one item each', async () => {
@@ -274,6 +277,7 @@ test('a name removed after the review stops filing_prepare', async () => {
 });
 
 test('a skipped optional income question does not hold back deductions', async () => {
+  await set(identity);
   await set([
     { path: 'taxpayer.dateOfBirth', value: null },
     { path: 'screening.paidStudentLoanInterest', value: true },

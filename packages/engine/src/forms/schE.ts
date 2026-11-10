@@ -81,12 +81,19 @@ export function rentalsOnReturn(facts: TaxFacts): RentalProperty[] {
     .sort(byId);
 }
 
+/** 1099-MISC ids linked to a rental: its `misc1099Ids` and every 1099-MISC whose `rentalId` names it. */
+export function rentalMiscIds(facts: TaxFacts, r: RentalProperty): string[] {
+  const ids = new Set(r.misc1099Ids ?? []);
+  for (const m of facts.misc1099s ?? []) if (m.rentalId === r.id) ids.add(m.id);
+  return [...ids];
+}
+
 /** Non-business 1099-MISCs on the return whose box 1/2 a rental claims. */
 export function linkedMiscs(
   facts: TaxFacts,
   r: RentalProperty
 ): Form1099Misc[] {
-  const ids = new Set(r.misc1099Ids ?? []);
+  const ids = new Set(rentalMiscIds(facts, r));
   const owners =
     statusOf(facts) === 'mfj' ? ['taxpayer', 'spouse'] : ['taxpayer'];
   return (facts.misc1099s ?? []).filter(

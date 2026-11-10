@@ -130,6 +130,7 @@ const misc1099 = z.strictObject({
   otherIncome: nonNegCents.optional(),
   federalWithheld: nonNegCents.optional(),
   treatAsBusiness: z.boolean().optional(),
+  rentalId: z.string().optional(),
 });
 
 const e1098 = z.strictObject({
@@ -248,6 +249,7 @@ const rental = z.strictObject({
   ownsDepreciableProperty: z.boolean().optional(),
   activeParticipation: z.boolean().optional(),
   priorYearUnallowedLoss: z.boolean().optional(),
+  expensesReviewed: z.boolean().optional(),
 });
 
 const business = z.strictObject({
@@ -311,6 +313,13 @@ const business = z.strictObject({
       evidenceWritten: z.boolean().optional(),
     })
     .optional(),
+  expensesReviewed: z.boolean().optional(),
+});
+
+const estimatedPayment = z.strictObject({
+  id: z.string(),
+  amount: nonNegCents,
+  date: date.optional(),
 });
 
 export const taxFactsSchema = z.strictObject({
@@ -328,6 +337,7 @@ export const taxFactsSchema = z.strictObject({
   e1098s: z.array(e1098),
   businesses: z.array(business),
   rentals: z.array(rental),
+  estimatedPayments: z.array(estimatedPayment).optional(),
   adjustments: z
     .strictObject({
       selfEmployedHealthInsurance: byPerson.optional(),
@@ -370,6 +380,7 @@ export const taxFactsSchema = z.strictObject({
       hasDependents: z.boolean().optional(),
       hasRentalOrRoyaltyIncome: z.boolean().optional(),
       paidStudentLoanInterest: z.boolean().optional(),
+      paidEstimatedTax: z.boolean().optional(),
     })
     .optional(),
   outOfScope: z

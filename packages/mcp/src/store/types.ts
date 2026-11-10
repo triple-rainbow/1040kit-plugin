@@ -37,6 +37,8 @@ export type DocKind =
   | '1099misc'
   | '1099k'
   | '1098e'
+  /** An estimated tax payment receipt (Direct Pay, EFTPS, 1040-ES voucher). */
+  | 'est_payment'
   | 'prior_1040'
   | 'bank_csv'
   | 'unknown';

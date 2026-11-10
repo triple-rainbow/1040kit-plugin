@@ -10,7 +10,8 @@
       "hasValidSsn": true,
       "canBeClaimedAsDependent": false,
       "livedInUsOverHalfYear": true,
-      "qualifyingChildOfAnother": false
+      "qualifyingChildOfAnother": false,
+      "blind": false
     },
     "dependents": [],
     "w2s": [],
@@ -58,7 +59,8 @@
             "businessUseStart": "2022-03-01"
           }
         },
-        "operatedFromHome": true
+        "operatedFromHome": true,
+        "expensesReviewed": true
       }
     ],
     "rentals": [],
@@ -79,13 +81,15 @@
     "screening": {
       "hasDependents": false,
       "hasRentalOrRoyaltyIncome": false,
-      "paidStudentLoanInterest": false
+      "paidStudentLoanInterest": false,
+      "paidEstimatedTax": true
     },
     "eitc": {
       "priorDisallowance": false
     },
     "payments": {
-      "estimatedTaxPayments": 1500000
+      "estimatedTaxPayments": 1500000,
+      "priorYearOverpaymentApplied": 0
     }
   },
   "expect": {

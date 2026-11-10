@@ -31,6 +31,16 @@ after(async () => {
   await env.cleanup();
 });
 
+/** Names and address, as the household form saves them. */
+const IDENTITY_SET = [
+  ['identity.taxpayer.firstName', 'Pat'],
+  ['identity.taxpayer.lastName', 'Example'],
+  ['identity.address.street', '1 Main St'],
+  ['identity.address.city', 'Austin'],
+  ['identity.address.state', 'TX'],
+  ['identity.address.zip', '78701'],
+].map(([path, value]) => ({ path, value, source: 'user' }));
+
 const call = async (name: string, args: Record<string, unknown>) => {
   const r = await client.callTool({ name, arguments: args });
   return r.structuredContent as Record<string, any>;
@@ -209,6 +219,7 @@ test('deductions and credits come after income, with an intro', async () => {
     workspace: ws,
     set: [
       ...none,
+      ...IDENTITY_SET,
       { path: 'outOfScope.other', value: [], source: 'user' },
       { path: 'filingStatus', value: 'single', source: 'user' },
       { path: 'taxpayer.dateOfBirth', value: '1994-05-01', source: 'user' },
@@ -237,7 +248,8 @@ test('deductions and credits come after income, with an intro', async () => {
       (q: { path: string }) => q.path === 'eitc.priorDisallowance'
     )
   );
-  assert.equal(next.remainingAfterThisPhase, 0);
+  // Then tax already paid (estimated payments).
+  assert.equal(next.remainingAfterThisPhase, 1);
 });
 
 test('nothing reads or asks before the start agreement', async () => {
@@ -432,6 +444,7 @@ test('the vehicle card comes with deductions and credits, records questions toge
     workspace: ws,
     set: [
       ...none,
+      ...IDENTITY_SET,
       { path: 'outOfScope.other', value: [], source: 'user' },
       { path: 'filingStatus', value: 'single', source: 'user' },
       { path: 'taxpayer.dateOfBirth', value: '1985-05-01', source: 'user' },

@@ -8,7 +8,8 @@
       "id": "taxpayer",
       "dateOfBirth": "1978-01-01",
       "hasValidSsn": true,
-      "canBeClaimedAsDependent": false
+      "canBeClaimedAsDependent": false,
+      "blind": false
     },
     "dependents": [],
     "w2s": [],
@@ -28,11 +29,15 @@
       {
         "owner": "taxpayer",
         "name": "Example Consulting",
-        "expenses": {}
+        "expenses": {},
+        "expensesReviewed": true
       }
     ],
     "e1098s": [],
-    "rentals": []
+    "rentals": [],
+    "screening": {
+      "paidEstimatedTax": false
+    }
   },
   "expect": {
     "f8959.total": 180,

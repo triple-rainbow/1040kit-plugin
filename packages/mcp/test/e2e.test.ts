@@ -162,22 +162,62 @@ test('W-2 + 1099-NEC → complete return → forms and both filing packages', as
     assert.ok(next.ok, JSON.stringify(next));
     if (next.done) break;
     phases.push(next.phase);
+    // A form's field applies when its showIf matches; known values, check
+    // boxes, the main-filer switch and optional fields need no new answer.
+    const applies = (f: {
+      showIf?: { path: string; equals?: unknown; notEquals?: unknown };
+    }) => {
+      if (!f.showIf) return true;
+      const v = answerFor(f.showIf.path);
+      return 'equals' in f.showIf
+        ? v === f.showIf.equals
+        : v !== f.showIf.notEquals;
+    };
     const blocking = next.questions.flatMap((q): { path: string }[] =>
       q.answer.kind === 'group'
-        ? q.answer.fields.map((f) => ({ ...f, blocking: q.blocking }))
-        : q.blocking && q.answer.kind !== 'multiselect'
+        ? q.answer.fields
+            .filter(
+              (f) =>
+                applies(f) &&
+                !f.optional &&
+                f.value === undefined &&
+                f.answer.kind !== 'check' &&
+                f.answer.kind !== 'swap'
+            )
+            .map((f) => ({ ...f, blocking: q.blocking }))
+        : q.blocking &&
+            q.answer.kind !== 'multiselect' &&
+            q.answer.kind !== 'checklist'
           ? [q]
           : []
     );
-    const set = next.questions.flatMap((q) => {
+    type Set = {
+      path: string;
+      value: Exclude<Answer, undefined>;
+      source: 'user';
+    };
+    const set = next.questions.flatMap((q): Set[] => {
       // A compact form: answer each of its fields.
       if (q.answer.kind === 'group')
         return q.answer.fields.flatMap((f) => {
-          const value = answerFor(f.path);
+          if (!applies(f) || f.answer.kind === 'swap') return [];
+          const value =
+            answerFor(f.path) ??
+            (f.value as Answer) ??
+            (f.answer.kind === 'check' ? false : undefined);
           return value === undefined
             ? []
             : [{ path: f.path, value, source: 'user' as const }];
         });
+      // An expense checklist: nothing to claim, so the step is just done.
+      if (q.answer.kind === 'checklist')
+        return [
+          {
+            path: q.answer.done.path,
+            value: true as const,
+            source: 'user' as const,
+          },
+        ];
       // "Check all that apply": none apply, so every option is false.
       if (q.answer.kind === 'multiselect')
         return [
