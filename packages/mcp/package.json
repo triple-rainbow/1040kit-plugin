@@ -1,6 +1,6 @@
 {
   "name": "1040kit",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "type": "module",
   "description": "Self-employed tax software you talk to: the 1040kit MCP server for Claude Code and Codex. Prepares a US federal return (Form 1040, Schedule C and SE) on your computer.",
   "license": "AGPL-3.0-only",
