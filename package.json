@@ -14,6 +14,7 @@
     "test:engine": "pnpm --filter @1040kit/engine test",
     "test:mcp": "pnpm --filter 1040kit test",
     "test:plugins": "node --import tsx --test plugins/scripts/*.test.ts",
+    "test:install": "bash plugins/scripts/install-check.sh",
     "typecheck": "pnpm -r typecheck",
     "format": "prettier --write .",
     "format:check": "prettier --check ."

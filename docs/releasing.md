@@ -34,6 +34,6 @@ On GitHub, create the `npm` environment (Settings → Environments → New envir
    ```
 
 3. The **Release** workflow checks that the tag matches the package version, runs every test, packs and publishes with provenance. Check the result at https://www.npmjs.com/package/1040kit.
-4. Run the golden journey against the published package: `pnpm --filter 1040kit test:journey -- --server=npm@<version>` ([golden-journey.md](golden-journey.md)). Every case should pass or be blocked as out of scope.
+4. Check what users now get: `bash plugins/scripts/install-check.sh triple-rainbow/1040kit-plugin <version>` and `pnpm --filter 1040kit test:journey -- --server=npm@<version>` ([e2e-testing.md](e2e-testing.md)). Every case should pass or be blocked as out of scope. Before the release, run the assistant journey too (`test:journey:assistant -- --server=dist`).
 
 `0.1.0` (2026-11-08) is the first working release; `0.0.1` was a README-only placeholder.
