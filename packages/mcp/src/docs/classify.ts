@@ -87,6 +87,10 @@ const SUPPORTED: {
   },
   { kind: '1099k', re: /\b1099-K\b|Payment Card and Third Party Network/gi },
   { kind: '1098e', re: /\b1098-E\b|Student Loan Interest Statement/gi },
+  {
+    kind: 'est_payment',
+    re: /\b1040[- ]?ES\b|Estimated Tax Payment|\bDirect Pay\b|\bEFTPS\b/gi,
+  },
 ];
 
 const count = (text: string, re: RegExp) => (text.match(re) ?? []).length;

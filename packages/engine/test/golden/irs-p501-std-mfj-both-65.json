@@ -8,7 +8,8 @@
       "id": "taxpayer",
       "dateOfBirth": "1955-01-01",
       "hasValidSsn": true,
-      "canBeClaimedAsDependent": false
+      "canBeClaimedAsDependent": false,
+      "blind": false
     },
     "dependents": [],
     "w2s": [
@@ -35,7 +36,11 @@
       "id": "spouse",
       "dateOfBirth": "1956-01-01",
       "hasValidSsn": true,
-      "canBeClaimedAsDependent": false
+      "canBeClaimedAsDependent": false,
+      "blind": false
+    },
+    "screening": {
+      "paidEstimatedTax": false
     }
   },
   "expect": {

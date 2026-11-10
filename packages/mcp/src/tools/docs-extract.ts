@@ -30,7 +30,7 @@ export const definition: ToolDefinition = {
   name: 'docs_extract',
   title: 'Read the numbers from documents',
   description:
-    'Extract the boxes of each W-2 / 1099 / 1098-E / prior-year 1040 into the tax facts, locally. Amounts are in cents. SSNs and account numbers are discarded, never stored; the owner (taxpayer or spouse) is matched by the name on the document. Employer/payer/lender EINs come back only as tokens like {{EIN:w2_1}}. Review every `lowConfidence` field with the user before relying on it. A CORRECTED form replaces the original from the same payer. Safe to re-run.',
+    'Extract the boxes of each W-2 / 1099 / 1098-E / prior-year 1040, and estimated tax payment receipts (IRS Direct Pay, EFTPS, Form 1040-ES; amount and date, only when for this tax year), into the tax facts, locally. Amounts are in cents. SSNs and account numbers are discarded, never stored; the owner (taxpayer or spouse) is matched by the name on the document. Employer/payer/lender EINs come back only as tokens like {{EIN:w2_1}}. Review every `lowConfidence` field with the user before relying on it. A CORRECTED form replaces the original from the same payer. Safe to re-run.',
   inputSchema,
   handler,
 };

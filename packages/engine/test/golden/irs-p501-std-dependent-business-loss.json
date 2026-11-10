@@ -8,7 +8,8 @@
       "id": "taxpayer",
       "dateOfBirth": "2007-03-01",
       "hasValidSsn": true,
-      "canBeClaimedAsDependent": true
+      "canBeClaimedAsDependent": true,
+      "blind": false
     },
     "dependents": [],
     "w2s": [
@@ -47,11 +48,15 @@
         "name": "Example Lawn Care",
         "expenses": {
           "supplies": 400000
-        }
+        },
+        "expensesReviewed": true
       }
     ],
     "e1098s": [],
-    "rentals": []
+    "rentals": [],
+    "screening": {
+      "paidEstimatedTax": false
+    }
   },
   "expect": {
     "schC.netProfit.taxpayer": -3000,

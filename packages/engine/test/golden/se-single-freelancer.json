@@ -8,7 +8,8 @@
       "id": "taxpayer",
       "dateOfBirth": "1993-11-02",
       "hasValidSsn": true,
-      "canBeClaimedAsDependent": false
+      "canBeClaimedAsDependent": false,
+      "blind": false
     },
     "dependents": [],
     "w2s": [],
@@ -46,7 +47,8 @@
         "homeOffice": {
           "method": "simplified",
           "squareFeet": 200
-        }
+        },
+        "expensesReviewed": true
       }
     ],
     "adjustments": {
@@ -55,10 +57,14 @@
       }
     },
     "payments": {
-      "estimatedTaxPayments": 800000
+      "estimatedTaxPayments": 800000,
+      "priorYearOverpaymentApplied": 0
     },
     "e1098s": [],
-    "rentals": []
+    "rentals": [],
+    "screening": {
+      "paidEstimatedTax": true
+    }
   },
   "expect": {
     "schC.grossReceipts.taxpayer": 60000,

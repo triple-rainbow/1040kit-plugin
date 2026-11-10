@@ -8,7 +8,8 @@
       "id": "taxpayer",
       "dateOfBirth": "1992-03-03",
       "hasValidSsn": true,
-      "canBeClaimedAsDependent": false
+      "canBeClaimedAsDependent": false,
+      "blind": false
     },
     "dependents": [],
     "w2s": [],
@@ -30,14 +31,19 @@
         "expenses": {},
         "vehicle": {
           "businessMiles": 1000
-        }
+        },
+        "expensesReviewed": true
       }
     ],
     "payments": {
-      "estimatedTaxPayments": 1000000
+      "estimatedTaxPayments": 1000000,
+      "priorYearOverpaymentApplied": 0
     },
     "e1098s": [],
-    "rentals": []
+    "rentals": [],
+    "screening": {
+      "paidEstimatedTax": true
+    }
   },
   "expect": {
     "schC.expense.car_truck.taxpayer": 725,

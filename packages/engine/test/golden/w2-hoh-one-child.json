@@ -8,7 +8,8 @@
       "id": "taxpayer",
       "dateOfBirth": "1988-07-15",
       "hasValidSsn": true,
-      "canBeClaimedAsDependent": false
+      "canBeClaimedAsDependent": false,
+      "blind": false
     },
     "dependents": [
       {
@@ -39,7 +40,10 @@
     "k1099s": [],
     "businesses": [],
     "e1098s": [],
-    "rentals": []
+    "rentals": [],
+    "screening": {
+      "paidEstimatedTax": false
+    }
   },
   "expect": {
     "wages": 48000,

@@ -10,7 +10,8 @@
       "hasValidSsn": true,
       "canBeClaimedAsDependent": false,
       "livedInUsOverHalfYear": true,
-      "qualifyingChildOfAnother": false
+      "qualifyingChildOfAnother": false,
+      "blind": false
     },
     "dependents": [],
     "w2s": [
@@ -50,7 +51,8 @@
     "screening": {
       "hasDependents": false,
       "hasRentalOrRoyaltyIncome": false,
-      "paidStudentLoanInterest": false
+      "paidStudentLoanInterest": false,
+      "paidEstimatedTax": false
     },
     "eitc": {
       "priorDisallowance": false

@@ -115,6 +115,12 @@ const PAGE = `<!doctype html>
   .add { font: inherit; font-size: 14px; justify-self: start; border: 1px dashed var(--line); background: transparent;
          color: var(--accent); border-radius: 999px; padding: 6px 12px; cursor: pointer; }
   .add:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  [hidden] { display: none !important; }
+  .section { font-size: 13px; font-weight: 600; margin: 4px 0 0; }
+  .row .check, .row .swap { padding: 4px 0; }
+  .row .check:hover { background: transparent; }
+  .item-amount { margin: 0 0 6px 36px; }
+  .hint { color: var(--muted); font-size: 12px; display: block; }
 </style>
 </head>
 <body>
@@ -166,6 +172,109 @@ function input(q, type, parse, show) {
   });
   return i;
 }
+
+// Put a value into a row's control (prefill, or the main-filer switch), as if typed or clicked.
+function setValue(row, answer, value) {
+  const kind = answer && answer.kind;
+  if (kind === 'check') {
+    const box = row.querySelector('input[type=checkbox]');
+    box.checked = value === true;
+    box.dispatchEvent(new Event('change'));
+    return;
+  }
+  const chipsEl = row.querySelector('.chips');
+  if (chipsEl) {
+    const match = [...chipsEl.querySelectorAll('.chip')].find((b) => b.dataset.v === String(value));
+    if (match) match.click();
+    else {
+      for (const b of chipsEl.querySelectorAll('.chip')) b.setAttribute('aria-pressed', 'false');
+      answers.delete(row.dataset.path);
+      refreshBar();
+    }
+    return;
+  }
+  const box = row.querySelector('input');
+  if (!box) return;
+  box.value = value === undefined || value === null ? '' : kind === 'amount' ? (Number(value) / 100).toFixed(2) : String(value);
+  box.dispatchEvent(new Event('input'));
+}
+
+// One check box that saves true or false (unchecked is an answer too).
+function checkBox(q, a) {
+  const i = el('input', { type: 'checkbox' });
+  const set = () => { answers.set(q.path, { value: i.checked, label: i.checked ? 'Yes' : 'No' }); refreshBar(); };
+  i.addEventListener('change', set);
+  answers.set(q.path, { value: false, label: 'No' });
+  return el('label', { class: 'check' }, i, el('span', {}, a.label));
+}
+
+// Business or rental expenses: tick what applies, enter each total. The
+// step is saved as done, so categories left unticked are $0.
+function checklistForm(q, a) {
+  const box = el('div', { class: 'checks', role: 'group', 'aria-label': q.question });
+  const on = new Map(); // item path -> cents (undefined while the box is empty)
+  let none = false;
+  const update = () => {
+    if (!none && on.size === 0) { answers.delete(q.path); refreshBar(); return; }
+    if ([...on.values()].some((v) => v === undefined)) { answers.delete(q.path); refreshBar(); return; }
+    const sets = [];
+    for (const it of a.items) {
+      if (on.has(it.path)) sets.push({ path: it.path, value: on.get(it.path) });
+      else if (it.value) sets.push({ path: it.path, value: null });
+    }
+    sets.push({ path: a.done.path, value: a.done.value });
+    const picked = a.items.filter((it) => on.has(it.path)).map((it) => it.label + ' $' + (on.get(it.path) / 100).toFixed(2));
+    answers.set(q.path, { sets, label: picked.length ? picked.join('; ') : a.noneLabel });
+    refreshBar();
+  };
+  const rows = [];
+  let noneBox;
+  for (const it of a.items) {
+    const c = el('input', { type: 'checkbox' });
+    const amt = el('input', { type: 'text', inputmode: 'decimal', placeholder: '0.00', 'aria-label': it.label + ' total' });
+    const money = el('div', { class: 'money item-amount', hidden: '' }, '$', amt);
+    const read = () => {
+      const n = Number(amt.value.split('$').join('').split(',').join('').trim());
+      on.set(it.path, amt.value.trim() === '' || !Number.isFinite(n) || n < 0 ? undefined : Math.round(n * 100));
+    };
+    c.addEventListener('change', () => {
+      money.hidden = !c.checked;
+      if (c.checked) { none = false; if (noneBox) noneBox.checked = false; read(); amt.focus(); }
+      else on.delete(it.path);
+      update();
+    });
+    amt.addEventListener('input', () => { read(); update(); });
+    const label = el('label', { class: 'check' }, c, el('span', {}, it.label, ...(it.hint ? [el('span', { class: 'hint' }, it.hint)] : [])));
+    box.append(label, money);
+    rows.push({ it, c, amt, money });
+    if (it.value) { c.checked = true; money.hidden = false; amt.value = (it.value / 100).toFixed(2); on.set(it.path, it.value); }
+  }
+  noneBox = el('input', { type: 'checkbox' });
+  noneBox.addEventListener('change', () => {
+    none = noneBox.checked;
+    if (none) for (const r of rows) { r.c.checked = false; r.money.hidden = true; on.delete(r.it.path); }
+    update();
+  });
+  box.append(el('label', { class: 'check none' }, noneBox, el('span', {}, a.noneLabel)));
+  if (a.note) box.append(el('p', { class: 'why' }, a.note));
+  if (on.size) update();
+  return box;
+}
+
+// Rows shown only while another field has a given answer.
+function applyShowIf() {
+  for (const row of root.querySelectorAll('.row[data-showif]')) {
+    const c = JSON.parse(row.dataset.showif);
+    const v = answers.has(c.path) ? answers.get(c.path).value : undefined;
+    const show = 'equals' in c ? v === c.equals : 'notEquals' in c ? v !== c.notEquals : true;
+    row.hidden = !show;
+  }
+  for (const h of root.querySelectorAll('.section[data-section]')) {
+    const rows = [...h.parentElement.querySelectorAll('.row')].filter((r) => r.dataset.section === h.dataset.section && r.closest('.form') === h.closest('.form'));
+    h.hidden = rows.length > 0 && rows.every((r) => r.hidden);
+  }
+}
+const hiddenRow = (path) => [...root.querySelectorAll('.row')].some((r) => r.dataset.path === path && r.hidden);
 
 // "Check all that apply": every option is saved, true when checked and false
 // otherwise, so one card replaces a yes/no question per situation.
@@ -236,11 +345,47 @@ function groupForm(q, a, card) {
   const form = el('div', { class: 'form', role: 'group', 'aria-label': q.question });
   let uid = 0;
   const addRows = (fields, into, person) => {
+    let section;
     for (const f of fields) {
+      if (f.hidden) {
+        // Saved as is, never shown (e.g. who owns a single filer's rental).
+        answers.set(f.path, { value: f.value, label: String(f.value), hidden: true });
+        continue;
+      }
+      if (f.section && f.section !== section) {
+        section = f.section;
+        into.append(el('h3', { class: 'section', 'data-section': f.section }, f.section));
+      }
       // For the post-save message and the "still open" list: card, person, field.
-      fieldLabels.set(f.path, { card: q.question, person, label: f.label });
+      fieldLabels.set(f.path, { card: q.question, person: person || f.section, label: f.label, optional: !!f.optional });
       const name = person ? person + ': ' + f.label : f.label;
       const sub = { path: f.path, question: name, answer: f.answer };
+      if (f.answer.kind === 'swap') {
+        const box = el('input', { type: 'checkbox' });
+        answers.set(f.path, { value: 'taxpayer', label: 'unchanged' });
+        box.addEventListener('change', () => {
+          const [a1, a2] = f.answer.sections;
+          const rowsOf = (sec) => [...form.querySelectorAll('.row')].filter((r) => r.dataset.section === sec);
+          const other = (path) => path.split('taxpayer').join('@').split('spouse').join('taxpayer').split('@').join('spouse');
+          const second = rowsOf(a2);
+          for (const r1 of rowsOf(a1)) {
+            const r2 = second.find((r) => r.dataset.path === other(r1.dataset.path));
+            if (!r2) continue;
+            const v1 = answers.has(r1.dataset.path) ? answers.get(r1.dataset.path).value : undefined;
+            const v2 = answers.has(r2.dataset.path) ? answers.get(r2.dataset.path).value : undefined;
+            setValue(r1, JSON.parse(r1.dataset.answer), v2);
+            setValue(r2, JSON.parse(r2.dataset.answer), v1);
+          }
+          answers.set(f.path, box.checked ? { value: 'spouse', label: 'the spouse is the main filer now' } : { value: 'taxpayer', label: 'unchanged' });
+          refreshBar();
+        });
+        const row = el('div', { class: 'row' }, el('label', { class: 'check swap' }, box, el('span', {}, f.answer.label)));
+        row.dataset.path = f.path;
+        row.dataset.answer = JSON.stringify(f.answer);
+        if (f.showIf) row.dataset.showif = JSON.stringify(f.showIf);
+        into.append(row);
+        continue;
+      }
       const ctl = control(sub);
       const id = 'f-' + (++uid) + '-' + Math.random().toString(36).slice(2, 7);
       // A text, date or number box gets a real <label for>; chips are labelled by it.
@@ -248,30 +393,41 @@ function groupForm(q, a, card) {
       let label;
       if (box) { box.id = id; label = el('label', { class: 'label', for: id }, f.label); }
       else { label = el('span', { class: 'label', id }, f.label); if (ctl.setAttribute) ctl.setAttribute('aria-labelledby', id); }
-      const row = el('div', { class: 'row' }, label, ctl);
+      const row = el('div', { class: 'row' }, ...(f.answer.kind === 'check' ? [ctl] : [label, ctl]));
       row.dataset.path = f.path;
+      row.dataset.answer = JSON.stringify(f.answer);
+      if (f.section) row.dataset.section = f.section;
+      if (f.showIf) row.dataset.showif = JSON.stringify(f.showIf);
       into.append(row);
+      if (f.value !== undefined) setValue(row, f.answer, f.value);
     }
     if (card) card.dataset.paths = JSON.stringify([...JSON.parse(card.dataset.paths || '[]'), ...fields.map((f) => f.path)]);
   };
   if (a.addAnother) {
     // New people: each gets a heading, and added ones can be removed.
-    const first = el('div', { class: 'person first' }, el('h2', {}, 'Person 1'));
-    addRows(a.fields, first, 'Person 1');
+    const heading = a.addAnother.heading || 'Person';
+    const prefix = a.addAnother.idPrefix || 'dependent_';
+    const first = el('div', { class: 'person first' }, el('h2', {}, heading + ' 1'));
+    addRows(a.fields, first, heading + ' 1');
     form.append(first);
     let n = a.addAnother.nextIndex;
     let count = 1;
     const add = el('button', { class: 'add', type: 'button' }, '+ ' + a.addAnother.label);
     add.addEventListener('click', () => {
-      const id = 'dependent_' + n++;
-      const title = 'Person ' + (++count);
-      const fields = a.addAnother.fields.map((f) => ({ ...f, path: f.path.split('{id}').join(id) }));
+      const id = prefix + n++;
+      const title = heading + ' ' + (++count);
+      const fields = a.addAnother.fields.map((f) => ({
+        ...f,
+        path: f.path.split('{id}').join(id),
+        ...(f.showIf ? { showIf: { ...f.showIf, path: f.showIf.path.split('{id}').join(id) } } : {}),
+      }));
       const remove = el('button', { class: 'remove', type: 'button', 'aria-label': 'Remove ' + title }, 'Remove');
       const person = el('div', { class: 'person' }, el('div', { class: 'person-head' }, el('h2', {}, title), remove));
       addRows(fields, person, title);
       remove.addEventListener('click', () => {
         const paths = new Set(fields.map((f) => f.path));
         for (const p of paths) { answers.delete(p); fieldLabels.delete(p); }
+        applyShowIf();
         if (card) card.dataset.paths = JSON.stringify(JSON.parse(card.dataset.paths || '[]').filter((p) => !paths.has(p)));
         person.remove();
         refreshBar();
@@ -291,6 +447,8 @@ function control(q, card) {
   switch (a.kind) {
     case 'group': return groupForm(q, a, card);
     case 'multiselect': return multiselect(q, a);
+    case 'checklist': return checklistForm(q, a);
+    case 'check': return checkBox(q, a);
     case 'yesno': return chips(q, [{ value: true, label: 'Yes' }, { value: false, label: 'No' }]);
     case 'choice': return chips(q, a.options);
     case 'number':
@@ -323,9 +481,11 @@ function reportSize() {
 }
 new ResizeObserver(reportSize).observe(root);
 function refreshBar() {
+  applyShowIf();
   if (!saveBtn) return;
-  saveBtn.disabled = answers.size === 0;
-  saveBtn.textContent = answers.size > 1 ? 'Save ' + answers.size + ' answers' : 'Save answer';
+  const n = [...answers.entries()].filter(([p, a]) => !a.hidden && !hiddenRow(p)).length;
+  saveBtn.disabled = n === 0;
+  saveBtn.textContent = n > 1 ? 'Save ' + n + ' answers' : 'Save answer';
 }
 
 function render(result) {
@@ -344,7 +504,7 @@ function render(result) {
     return;
   }
   const more = data.remaining - questions.length;
-  const step = data.phase === 'deductions' ? 'Part 2' : 'Part 1';
+  const step = data.phase === 'payments' ? 'Part 3' : data.phase === 'deductions' ? 'Part 2' : 'Part 1';
   root.append(el('div', { class: 'phase' },
     el('span', { class: 'step' }, step),
     el('h1', {}, data.phaseTitle || 'A few questions for your return'),
@@ -359,12 +519,15 @@ function render(result) {
     card.append(control(q, card), el('p', { class: 'err', hidden: '' }));
     if (q.answer && q.answer.kind === 'multiselect')
       card.dataset.paths = JSON.stringify([...q.answer.options.map((o) => o.path), ...(q.answer.other ? [q.answer.other.path] : [])]);
+    if (q.answer && q.answer.kind === 'checklist')
+      card.dataset.paths = JSON.stringify([...q.answer.items.map((i) => i.path), q.answer.done.path]);
     root.append(card);
   }
   saveBtn = el('button', { class: 'save', type: 'button', disabled: '' }, 'Save answer');
   saveBtn.addEventListener('click', save);
   statusEl = el('span', { class: 'status', role: 'status' });
   root.append(el('div', { class: 'bar' }, saveBtn, statusEl));
+  refreshBar();
 }
 
 function cardFor(path) {
@@ -378,7 +541,10 @@ function questionPathFor(path) {
 }
 
 async function save() {
-  const entries = [...answers.entries()];
+  // The main-filer switch runs first: the other fields describe the people as shown.
+  const entries = [...answers.entries()]
+    .filter(([p]) => !hiddenRow(p))
+    .sort(([a], [b]) => (b === 'mainFiler') - (a === 'mainFiler'));
   if (!entries.length || !workspace) return;
   saveBtn.disabled = true;
   statusEl.textContent = 'Saving…';
@@ -408,6 +574,7 @@ async function save() {
     if (c) { const e = c.querySelector('.err'); e.textContent = (fieldLabels.get(path) ? fieldLabels.get(path).label + ': ' : '') + why; e.hidden = false; }
   }
   const saved = entries.filter(([p, a]) => !(a.sets ? a.sets.some((x) => rejectedPaths.has(x.path)) : rejectedPaths.has(p)));
+  const done = (r) => r.classList.contains('saved') || r.hidden || (fieldLabels.get(r.dataset.path) || {}).optional;
   for (const [p] of saved) {
     answers.delete(p);
     const c = cardFor(p);
@@ -417,7 +584,7 @@ async function save() {
       // A form: mark the row; the card is done when every row is.
       row.classList.add('saved');
       for (const i of row.querySelectorAll('button, input')) i.setAttribute('disabled', '');
-      if ([...c.querySelectorAll('.row')].every((r) => r.classList.contains('saved'))) {
+      if ([...c.querySelectorAll('.row')].every(done)) {
         c.classList.add('saved');
         for (const i of c.querySelectorAll('button')) i.setAttribute('disabled', '');
         c.append(el('p', { class: 'ok' }, 'Saved'));
@@ -428,7 +595,7 @@ async function save() {
     for (const i of c.querySelectorAll('button, input')) i.setAttribute('disabled', '');
     c.append(el('p', { class: 'ok' }, 'Saved'));
   }
-  const lines = saved.map(([p, a]) => {
+  const lines = saved.filter(([, a]) => !a.hidden).map(([p, a]) => {
     const q = questions.find((x) => x.path === p);
     if (q && q.answer && q.answer.kind === 'multiselect') return '- Situations that apply: ' + a.label;
     if (fieldLabels.has(p)) return null; // grouped below, one line per card
@@ -452,7 +619,7 @@ async function save() {
   const still = [];
   for (const c of root.querySelectorAll('section.q')) {
     if (c.classList.contains('saved')) continue;
-    const rows = [...c.querySelectorAll('.row')].filter((r) => !r.classList.contains('saved'));
+    const rows = [...c.querySelectorAll('.row')].filter((r) => !done(r));
     if (!c.querySelector('.row')) { still.push(c.getAttribute('aria-label')); continue; }
     const open = rows.map((r) => ({ f: fieldLabels.get(r.dataset.path), chat: !!r.querySelector('.note') })).filter((x) => x.f);
     const chat = open.filter((x) => x.chat).map((x) => x.f.label.replace(/\\?.*$/, '') + ' (answer in chat)');

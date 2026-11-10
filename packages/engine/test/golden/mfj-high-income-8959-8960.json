@@ -8,7 +8,8 @@
       "id": "taxpayer",
       "dateOfBirth": "1980-02-02",
       "hasValidSsn": true,
-      "canBeClaimedAsDependent": false
+      "canBeClaimedAsDependent": false,
+      "blind": false
     },
     "dependents": [],
     "w2s": [
@@ -72,7 +73,8 @@
     "screening": {
       "hasDependents": false,
       "hasRentalOrRoyaltyIncome": false,
-      "paidStudentLoanInterest": false
+      "paidStudentLoanInterest": false,
+      "paidEstimatedTax": false
     },
     "eitc": {
       "priorDisallowance": false
@@ -81,7 +83,8 @@
       "id": "spouse",
       "dateOfBirth": "1982-09-09",
       "hasValidSsn": true,
-      "canBeClaimedAsDependent": false
+      "canBeClaimedAsDependent": false,
+      "blind": false
     }
   },
   "expect": {

@@ -10,7 +10,8 @@
       "hasValidSsn": true,
       "canBeClaimedAsDependent": false,
       "livedInUsOverHalfYear": true,
-      "qualifyingChildOfAnother": false
+      "qualifyingChildOfAnother": false,
+      "blind": false
     },
     "dependents": [
       {
@@ -52,6 +53,9 @@
     "rentals": [],
     "eitc": {
       "priorDisallowance": false
+    },
+    "screening": {
+      "paidEstimatedTax": false
     }
   },
   "expect": {

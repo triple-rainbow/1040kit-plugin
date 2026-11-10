@@ -8,13 +8,15 @@
       "id": "taxpayer",
       "dateOfBirth": "1984-10-10",
       "hasValidSsn": true,
-      "canBeClaimedAsDependent": false
+      "canBeClaimedAsDependent": false,
+      "blind": false
     },
     "spouse": {
       "id": "spouse",
       "dateOfBirth": "1986-12-12",
       "hasValidSsn": true,
-      "canBeClaimedAsDependent": false
+      "canBeClaimedAsDependent": false,
+      "blind": false
     },
     "dependents": [
       {
@@ -53,7 +55,10 @@
     "k1099s": [],
     "businesses": [],
     "e1098s": [],
-    "rentals": []
+    "rentals": [],
+    "screening": {
+      "paidEstimatedTax": false
+    }
   },
   "expect": {
     "taxableIncome": 68500,

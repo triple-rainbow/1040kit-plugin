@@ -125,6 +125,8 @@ export interface Form1099Misc {
   federalWithheld?: Cents; // box 4
   /** User confirmed these amounts are receipts of their Schedule C business. */
   treatAsBusiness?: boolean;
+  /** The rental (`rentals[].id`) whose rents or royalties these are (same as listing it in that rental's `misc1099Ids`). */
+  rentalId?: string;
 }
 
 /** Form 1098-E, Student Loan Interest Statement. */
@@ -215,6 +217,8 @@ export interface Business {
   allInvestmentAtRisk?: boolean;
   /** Part IV, lines 43-47b: asked when car or truck expenses are claimed on line 9. */
   vehicleUse?: VehicleUse;
+  /** The user went through the expense checklist (Part II), so missing categories are $0. */
+  expensesReviewed?: boolean;
 }
 
 /** Schedule C Part IV, information on your vehicle. */
@@ -318,6 +322,8 @@ export interface RentalProperty {
   activeParticipation?: boolean;
   /** A prior-year unallowed passive loss exists → Form 8582 → out of scope. */
   priorYearUnallowedLoss?: boolean;
+  /** The user went through the expense checklist (lines 5-19), so missing categories are $0. */
+  expensesReviewed?: boolean;
 }
 
 export interface Adjustments {
@@ -347,6 +353,8 @@ export interface Screening {
   hasDependents?: boolean;
   hasRentalOrRoyaltyIncome?: boolean;
   paidStudentLoanInterest?: boolean;
+  /** Paid estimated tax (or applied last year's refund) for this tax year. */
+  paidEstimatedTax?: boolean;
 }
 
 export interface ObbbaFacts {
@@ -363,8 +371,21 @@ export interface ObbbaFacts {
 }
 
 export interface Payments {
+  /**
+   * Estimated tax paid for the year that isn't in `estimatedPayments`
+   * (payments without a receipt in the documents), in total.
+   */
   estimatedTaxPayments?: Cents;
   priorYearOverpaymentApplied?: Cents;
+}
+
+/** One estimated tax payment read from a receipt (IRS Direct Pay, EFTPS, 1040-ES). */
+export interface EstimatedPayment {
+  /** "estpay_1", … */
+  id: string;
+  amount: Cents;
+  /** YYYY-MM-DD, when the receipt shows it. */
+  date?: string;
 }
 
 /** Situations the interview detects that v1 does not compute. */
@@ -408,6 +429,8 @@ export interface TaxFacts {
   adjustments?: Adjustments;
   obbba?: ObbbaFacts;
   payments?: Payments;
+  /** Form 1040 line 26: estimated payments with a receipt; the rest is in `payments`. */
+  estimatedPayments?: EstimatedPayment[];
   studentLoan?: StudentLoanFacts;
   eitc?: EitcFacts;
   screening?: Screening;

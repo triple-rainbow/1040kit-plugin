@@ -8,7 +8,8 @@
       "id": "taxpayer",
       "dateOfBirth": "1996-02-29",
       "hasValidSsn": true,
-      "canBeClaimedAsDependent": false
+      "canBeClaimedAsDependent": false,
+      "blind": false
     },
     "dependents": [],
     "w2s": [
@@ -36,7 +37,10 @@
       }
     },
     "e1098s": [],
-    "rentals": []
+    "rentals": [],
+    "screening": {
+      "paidEstimatedTax": false
+    }
   },
   "expect": {
     "agi": 42000,

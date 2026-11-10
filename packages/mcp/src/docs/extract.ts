@@ -8,6 +8,7 @@ import { inboxPath } from '../store/workspace.ts';
 import { classify, isCorrected } from './classify.ts';
 import { type LowConfidence, type ParsedDoc } from './parsers/common.ts';
 import { parseDiv1099 } from './parsers/div.ts';
+import { parseEstPayment } from './parsers/est-payment.ts';
 import { parse1098E } from './parsers/e1098.ts';
 import { parseInt1099 } from './parsers/int.ts';
 import { parseK1099 } from './parsers/k.ts';
@@ -17,8 +18,12 @@ import { parsePrior1040 } from './parsers/prior-1040.ts';
 import { parseW2 } from './parsers/w2.ts';
 import { readDocText, type TextResult } from './text.ts';
 
-type FactKind = Exclude<DocKind, 'prior_1040' | 'bank_csv' | 'unknown'>;
+type FactKind = Exclude<
+  DocKind,
+  'prior_1040' | 'est_payment' | 'bank_csv' | 'unknown'
+>;
 type Collection =
+  | 'estimatedPayments'
   | 'w2s'
   | 'int1099s'
   | 'div1099s'
@@ -226,7 +231,10 @@ function upsertFact(
   fieldOf: (k: string) => string,
   at: string
 ): string[] {
-  const list = data.facts[coll] as unknown as (Record<string, unknown> & {
+  const list = (data.facts[coll] ?? []) as unknown as (Record<
+    string,
+    unknown
+  > & {
     id: string;
   })[];
   const idx = list.findIndex((f) => f.id === fact.id);
@@ -392,6 +400,84 @@ export async function extractDocs(
               reason: 'Read by OCR; confirm.',
             }))
           : [],
+      });
+      continue;
+    }
+    if (kind === 'est_payment') {
+      const r = parseEstPayment(t.text);
+      const year = data.facts.taxYear;
+      if (r.purpose === 'extension' || r.purpose === 'balance_due') {
+        entry.status = 'extracted';
+        entry.note =
+          r.purpose === 'extension'
+            ? 'An extension payment (Form 4868): not an estimated tax payment. 1040kit v1 can’t include it yet.'
+            : 'A payment of a balance due, not an estimated tax payment: it does not count on this return.';
+        skip(entry.docId, `not_estimated_payment:${r.purpose}`);
+        continue;
+      }
+      if (r.taxYear !== undefined && r.taxYear !== year) {
+        entry.status = 'extracted';
+        entry.note = `An estimated tax payment for ${r.taxYear}, not ${year}: it does not count on this return.`;
+        skip(entry.docId, `other_tax_year:${r.taxYear}`);
+        continue;
+      }
+      const low: LowConfidence[] = [];
+      if (r.amount === undefined)
+        low.push({
+          field: 'amount',
+          reason: 'Payment amount not found; confirm it with the user.',
+        });
+      if (r.taxYear === undefined)
+        low.push({
+          field: 'taxYear',
+          reason: `The tax year isn’t on the receipt; confirm the payment is for ${year}.`,
+        });
+      if (r.purpose === 'unknown')
+        low.push({
+          field: 'purpose',
+          reason: 'Confirm this was an estimated tax payment (Form 1040-ES).',
+        });
+      if (t.ocr)
+        low.push({
+          field: 'amount',
+          reason: 'Read by OCR from an image; confirm against the receipt.',
+        });
+      data.facts.estimatedPayments ??= [];
+      let id = entry.factId;
+      if (!id) {
+        let max = 0;
+        for (const x of [
+          ...data.facts.estimatedPayments.map((p) => p.id),
+          ...data.docs.map((d) => d.factId ?? ''),
+        ])
+          max = Math.max(max, Number(/^estpay_(\d+)$/.exec(x)?.[1] ?? 0));
+        id = `estpay_${max + 1}`;
+      }
+      const fact: Record<string, unknown> & { id: string } = {
+        id,
+        amount: r.amount ?? 0,
+        ...(r.date ? { date: r.date } : {}),
+      };
+      const factPaths = upsertFact(
+        data,
+        'estimatedPayments',
+        fact,
+        entry.docId,
+        (k) => (k === 'amount' ? 'payment amount' : 'payment date'),
+        at
+      );
+      entry.factId = id;
+      entry.status = 'extracted';
+      result.extracted.push({
+        docId: entry.docId,
+        kind,
+        fields: {
+          amount: fact.amount as number,
+          ...(r.date ? { date: r.date } : {}),
+          ...(r.taxYear ? { taxYear: r.taxYear } : {}),
+        },
+        factPaths,
+        lowConfidence: low,
       });
       continue;
     }

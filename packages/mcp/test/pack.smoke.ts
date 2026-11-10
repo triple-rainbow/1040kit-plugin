@@ -204,7 +204,27 @@ test(
       }>('interview_next', { workspace, limit: 10 });
       assert.ok(next.ok, JSON.stringify(next));
       if (next.done) break;
+      // A form field applies when its showIf matches; known values, check
+      // boxes and the main-filer switch take their default.
+      const applies = (f: any) =>
+        !f.showIf ||
+        ('equals' in f.showIf
+          ? answerFor(f.showIf.path) === f.showIf.equals
+          : answerFor(f.showIf.path) !== f.showIf.notEquals);
       const set = next.questions.flatMap((q) => {
+        if (q.answer?.kind === 'group')
+          return q.answer.fields.flatMap((f: any) => {
+            if (!applies(f) || f.answer.kind === 'swap') return [];
+            const value =
+              answerFor(f.path) ??
+              f.value ??
+              (f.answer.kind === 'check' ? false : undefined);
+            return value === undefined
+              ? []
+              : [{ path: f.path, value, source: 'user' }];
+          });
+        if (q.answer?.kind === 'checklist')
+          return [{ path: q.answer.done.path, value: true, source: 'user' }];
         if (q.answer?.kind === 'multiselect')
           return [
             ...q.answer.options.map((o: { path: string }) => ({
@@ -221,11 +241,23 @@ test(
           ? []
           : [{ path: q.path, value, source: 'user' }];
       });
-      const stuck = next.questions.filter(
-        (q) =>
-          q.blocking &&
-          q.answer?.kind !== 'multiselect' &&
-          answerFor(q.path) === undefined
+      const stuck = next.questions.flatMap((q) =>
+        q.answer?.kind === 'group'
+          ? q.answer.fields.filter(
+              (f: any) =>
+                applies(f) &&
+                !f.optional &&
+                f.value === undefined &&
+                f.answer.kind !== 'check' &&
+                f.answer.kind !== 'swap' &&
+                answerFor(f.path) === undefined
+            )
+          : q.blocking &&
+              q.answer?.kind !== 'multiselect' &&
+              q.answer?.kind !== 'checklist' &&
+              answerFor(q.path) === undefined
+            ? [q]
+            : []
       );
       assert.deepEqual(
         stuck.map((q) => q.path),

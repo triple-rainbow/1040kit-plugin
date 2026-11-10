@@ -1,6 +1,6 @@
 {
   "name": "TY2026 single, one W-2 (provisional: 2026 Tax Table not yet published)",
-  "source": "Rev. Proc. 2025-32 \u00a74.14 (standard deduction 16,100) and Table 3 (single brackets). 1a 80,000; 12e 16,100; 15 = 63,900. 16: Tax Table method (row 63,900-63,950, midpoint 63,925): 5,800 + 22% x (63,925 - 50,400) = 8,775.50 -> 8,776 (provisional until the 2026 Tax Table is published). 25a 9,000; 34 = 224. complete = false while TY2026 params are provisional.",
+  "source": "Rev. Proc. 2025-32 §4.14 (standard deduction 16,100) and Table 3 (single brackets). 1a 80,000; 12e 16,100; 15 = 63,900. 16: Tax Table method (row 63,900-63,950, midpoint 63,925): 5,800 + 22% x (63,925 - 50,400) = 8,775.50 -> 8,776 (provisional until the 2026 Tax Table is published). 25a 9,000; 34 = 224. complete = false while TY2026 params are provisional.",
   "facts": {
     "taxYear": 2026,
     "filingStatus": "single",
@@ -8,7 +8,8 @@
       "id": "taxpayer",
       "dateOfBirth": "1985-05-05",
       "hasValidSsn": true,
-      "canBeClaimedAsDependent": false
+      "canBeClaimedAsDependent": false,
+      "blind": false
     },
     "dependents": [],
     "w2s": [
@@ -46,7 +47,8 @@
     "screening": {
       "hasDependents": false,
       "hasRentalOrRoyaltyIncome": false,
-      "paidStudentLoanInterest": false
+      "paidStudentLoanInterest": false,
+      "paidEstimatedTax": false
     },
     "e1098s": [],
     "rentals": []

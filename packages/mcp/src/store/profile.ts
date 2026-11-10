@@ -10,6 +10,7 @@ import type { z } from 'zod';
 import { containsPii } from '../pii/redact.ts';
 import { isToken, Vault } from '../pii/vault.ts';
 import { identitySchema, taxFactsSchema } from './facts-schema.ts';
+import { swapFilers } from './swap.ts';
 import type { FactSource, ProvenanceEntry, StoreData } from './types.ts';
 
 export type Segment = { key: string; select?: string };
@@ -38,6 +39,7 @@ const KEYED: Record<string, 'id' | 'owner'> = {
   e1098s: 'id',
   businesses: 'owner',
   rentals: 'id',
+  estimatedPayments: 'id',
 };
 
 /** Required money fields that start at 0 when an item is created by hand. */
@@ -57,6 +59,7 @@ const NEW_ITEM_DEFAULTS: Record<string, Record<string, unknown>> = {
   k1099s: { grossAmount: 0 },
   e1098s: { interest: 0 },
   rentals: { expenses: {} },
+  estimatedPayments: { amount: 0 },
 };
 
 type Obj = Record<string, unknown>;
@@ -81,7 +84,12 @@ export interface SetOutcome {
 }
 
 /** Applies one write in place. Throws an Error with a user-facing reason. */
-function applyOne(root: Obj, segs: Segment[], value: unknown): SetOutcome {
+function applyOne(
+  root: Obj,
+  segs: Segment[],
+  value: unknown,
+  isIdentity = false
+): SetOutcome {
   const out: SetOutcome = {};
   let cur: Obj = root;
   for (let i = 0; i < segs.length; i++) {
@@ -132,7 +140,9 @@ function applyOne(root: Obj, segs: Segment[], value: unknown): SetOutcome {
     }
     let next = cur[s.key];
     if (next === undefined || next === null) {
-      next = cur[s.key] = s.key === 'spouse' ? { id: 'spouse' } : {};
+      // The spouse's tax facts carry their person id; their name (identity) doesn't.
+      next = cur[s.key] =
+        s.key === 'spouse' && i === 0 && !isIdentity ? { id: 'spouse' } : {};
     }
     if (typeof next !== 'object' || Array.isArray(next)) {
       throw new Error(`${s.key} is a value, not a group`);
@@ -196,6 +206,48 @@ export function applySets(
   sets: SetRequest[],
   at: string
 ): SetResult {
+  // `mainFiler` is not a fact: "spouse" swaps who is listed first. It runs
+  // before the other writes, which then describe the people in their new places.
+  const result: SetResult = { updated: [], rejected: [] };
+  for (const req of sets.filter((r) => r.path === 'mainFiler')) {
+    if (req.value !== 'taxpayer' && req.value !== 'spouse') {
+      result.rejected.push({
+        path: req.path,
+        reason: 'mainFiler is "taxpayer" (keep) or "spouse" (swap)',
+      });
+      continue;
+    }
+    if (req.value === 'spouse') swapFilers(data);
+    data.answers.mainFiler = at;
+    result.updated.push(req.path);
+  }
+  const rest = sets.filter((r) => r.path !== 'mainFiler');
+  // A batch is checked as a whole first, so related fields (a home office:
+  // method, square feet, expenses) can arrive one path at a time. If the
+  // whole batch isn't valid, each write is checked on its own, as before.
+  const trial = structuredClone(data);
+  const whole = applySetsEach(trial, rest, at, false);
+  if (
+    whole.rejected.length === 0 &&
+    taxFactsSchema.safeParse(trial.facts).success &&
+    identitySchema.safeParse(trial.identity).success
+  ) {
+    Object.assign(data, trial);
+    result.updated.push(...whole.updated);
+    return result;
+  }
+  const each = applySetsEach(data, rest, at, true);
+  result.updated.push(...each.updated);
+  result.rejected.push(...each.rejected);
+  return result;
+}
+
+function applySetsEach(
+  data: StoreData,
+  sets: SetRequest[],
+  at: string,
+  validateEach: boolean
+): SetResult {
   const result: SetResult = { updated: [], rejected: [] };
   const vault = new Vault(data.vault);
   const created = new Map<string, string[]>(); // item → paths in this batch
@@ -251,13 +303,26 @@ export function applySets(
         : segs;
       if (isIdentity && isegs.length === 0)
         throw new Error('set identity fields one at a time');
-      outcome = applyOne(draft, isegs, req.value);
+      // A different home office method starts a fresh home office: the
+      // simplified and actual methods have different fields.
+      const office =
+        /^businesses\[(taxpayer|spouse)\]\.homeOffice\.method$/.exec(req.path);
+      if (office) {
+        const b = (draft.businesses as Obj[] | undefined)?.find(
+          (x) => x.owner === office[1]
+        );
+        const cur = b?.homeOffice as Obj | undefined;
+        if (b && cur && cur.method !== req.value) delete b.homeOffice;
+      }
+      outcome = applyOne(draft, isegs, req.value, isIdentity);
     } catch (e) {
       reject(req.path, (e as Error).message);
       continue;
     }
     const schema = isIdentity ? identitySchema : taxFactsSchema;
-    const parsed = schema.safeParse(draft);
+    const parsed = validateEach
+      ? schema.safeParse(draft)
+      : { success: true as const };
     let issues = parsed.success ? [] : parsed.error.issues;
     if (!isIdentity) {
       // An owner may still arrive later in this batch.
@@ -313,6 +378,7 @@ export function applySets(
       !node ||
       segs[0]!.key === 'dependents' ||
       segs[0]!.key === 'businesses' ||
+      segs[0]!.key === 'estimatedPayments' ||
       node.owner
     )
       continue;

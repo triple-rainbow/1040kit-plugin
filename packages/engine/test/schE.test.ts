@@ -163,16 +163,23 @@ test('a non-business 1099-MISC with rents that no property claims is a blocking 
       },
     ],
   });
+  // No property yet: ask for it first.
+  const first = requiredFacts(f).find((x) => x.path === 'rentals');
+  assert.ok(first);
+  assert.equal(first.blocking, true);
+  // With a property, ask which one the 1099-MISC is for, at a path the answer can be saved to.
+  f.rentals = [rental('rental_1')];
   const m = requiredFacts(f).find(
-    (x) => x.path === 'rentals[<id>].misc1099Ids'
+    (x) => x.path === 'misc1099s[misc_1].rentalId'
   );
   assert.ok(m);
   assert.equal(m.blocking, true);
-  // Linking it removes the question.
+  // Linking it (from either side) removes the question.
+  f.misc1099s[0]!.rentalId = 'rental_1';
+  assert.ok(!requiredFacts(f).some((x) => x.path.endsWith('.rentalId')));
+  f.misc1099s[0]!.rentalId = undefined;
   f.rentals = [rental('rental_1', { misc1099Ids: ['misc_1'] })];
-  assert.ok(
-    !requiredFacts(f).some((x) => x.path === 'rentals[<id>].misc1099Ids')
-  );
+  assert.ok(!requiredFacts(f).some((x) => x.path.endsWith('.rentalId')));
 });
 
 test('rental questions: type, days, ownership, prior-year losses; active participation only with a loss', () => {
