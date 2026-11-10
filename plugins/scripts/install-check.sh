@@ -13,6 +13,7 @@
 # a model. The user's own Claude config is not touched.
 set -euo pipefail
 
+[ "${1:-}" = "--" ] && shift # pnpm test:install -- <source> <version>
 root="$(cd "$(dirname "$0")/../.." && pwd)"
 source="${1:-triple-rainbow/1040kit-plugin}"
 [ "$source" = "." ] && source="$root"

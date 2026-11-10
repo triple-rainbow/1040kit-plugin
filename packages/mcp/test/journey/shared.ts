@@ -497,7 +497,11 @@ export async function verifyReturn(
     rv.return?.outcome?.amount !== Math.abs(Number(want))
   )
     fail(`outcome ${JSON.stringify(rv.return?.outcome)}; golden ${want}`);
-  if (!String(rv.confirmPrompt).includes('terms-of-service'))
+  // Asked until the user confirms; after that the review just says so.
+  if (
+    rv.confirmed !== true &&
+    !String(rv.confirmPrompt).includes('terms-of-service')
+  )
     fail('confirmPrompt has no link to the terms');
   if (confirm) {
     const confirmed = await call('return_review', {

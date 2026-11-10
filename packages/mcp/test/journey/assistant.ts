@@ -224,6 +224,9 @@ async function runCase(g: Golden, dir: string): Promise<CaseReport> {
     '--allowedTools',
     'mcp__1040kit__*',
     'Skill',
+    // The skill's reference pages, and the filing instructions it writes.
+    `Read(/${pluginDir}/**)`,
+    `Read(/${serverEnv(dir).KIT1040_HOME}/*/outputs/**)`,
     '--max-budget-usd',
     budget,
     ...(model ? ['--model', model] : []),
@@ -243,6 +246,7 @@ async function runCase(g: Golden, dir: string): Promise<CaseReport> {
   ];
 
   const tools: ToolUse[] = [];
+  const said: { turn: number; text: string }[] = [];
   let cost = 0;
   let aSid = '';
   let uSid = '';
@@ -264,6 +268,7 @@ async function runCase(g: Golden, dir: string): Promise<CaseReport> {
       break;
     }
     aSid = a.sessionId;
+    said.push({ turn, text: a.text });
     // The user saves the documents once the workspace (and its inbox) exists.
     const inbox = join(serverEnv(dir).KIT1040_HOME, String(year), 'inbox');
     if (!docsSaved && existsSync(inbox)) {
@@ -318,6 +323,15 @@ async function runCase(g: Golden, dir: string): Promise<CaseReport> {
   if (!confirmed) fail('never recorded the user’s confirmation of the return');
   else if (review && confirmed.turn === review.turn)
     fail('confirmed the return in the same turn it showed the review');
+  // What the user must have been shown before agreeing and confirming.
+  const shownBefore = (turn: number, re: RegExp) =>
+    said.some((m) => m.turn < turn && re.test(m.text));
+  if (agreed && !shownBefore(agreed.turn, /not tax advice/i))
+    fail('agreed to the terms without showing the agreement text');
+  if (confirmed && !shownBefore(confirmed.turn, /terms-of-service/))
+    fail(
+      'confirmed the return without showing the confirmation prompt and terms link'
+    );
 
   // The finished workspace, checked like the tool journey.
   let conn;
