@@ -104,6 +104,25 @@ Then open http://localhost:4310.
 
 The released server is on npm as [`1040kit`](https://www.npmjs.com/package/1040kit) (what the plugins run with `npx -y 1040kit`). How releases are cut: [`docs/releasing.md`](docs/releasing.md).
 
+## Testing plan
+
+`pnpm test` checks the tax engine against the golden returns (`packages/engine/test/golden/`, each worked by hand from IRS forms and examples) and each MCP tool on its own. Three end-to-end tests then check what a user actually gets. They use the same golden returns and only synthetic people:
+
+| Test              | Command                                        | What it proves                                                                                                                                                                                                     | Needs                                                          |
+| ----------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------- |
+| Install           | `pnpm test:install`                            | The plugin installs from the marketplace with both skills, Claude Code connects to its server, and that npm version prepares a return                                                                              | `claude` CLI, network                                          |
+| Tool journey      | `pnpm --filter 1040kit test:journey`           | Every golden return, through the tools in playbook order (documents, interview, deductions, review, forms, filing), gets the right numbers, with each value printed on its IRS line in the PDF and the entry sheet | nothing (`-- --server=npm@<version>` for a release)            |
+| Assistant journey | `pnpm --filter 1040kit test:journey:assistant` | Claude Code with the skills prepares a return in a real conversation with a simulated taxpayer, follows the playbook and leaves the agreement and the final "looks good" to the user                               | a signed-in Claude Code; about $4–14 of model usage per return |
+
+When to run them:
+
+- **Every PR:** `pnpm test` and `test:pack` in CI. The tool journey joins CI once its open failures are fixed.
+- **After each npm release:** the install check and the tool journey against the new version (`docs/releasing.md` step 4).
+- **Before a release, and when skills change:** the assistant journey, on its three representative returns or `--all`.
+- **Before a big UI change:** a person in Claude Desktop, where the question card renders (`widget:harness` covers it in a browser).
+
+Details, options and how to read the reports: [`docs/e2e-testing.md`](docs/e2e-testing.md).
+
 ## License
 
 [AGPL-3.0](LICENSE). Copyright (C) 2026 Triple Rainbow.

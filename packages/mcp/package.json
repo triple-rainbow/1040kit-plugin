@@ -51,6 +51,8 @@
     "start": "node --import tsx src/bin.ts",
     "test": "node --import tsx --test 'test/**/*.test.ts'",
     "test:pack": "node --import tsx --test test/pack.smoke.ts",
+    "test:journey": "node --import tsx test/journey/tools.ts",
+    "test:journey:assistant": "node --import tsx test/journey/assistant.ts",
     "typecheck": "tsc --noEmit",
     "widget:harness": "node --import tsx scripts/widget-harness/build.ts"
   },
