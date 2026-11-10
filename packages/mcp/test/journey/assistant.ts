@@ -175,6 +175,8 @@ function persona(g: Golden): string {
     '- When it shows the review of the whole return and asks you to confirm, reply "looks good".',
     '- When it asks how you will file, choose to print and mail.',
     '- When it lists possible deductions, pick only the ones your facts support.',
+    `- Your filing status is ${f.filingStatus} (single, mfj = married filing jointly, hoh = head of household) and stays that way. If the assistant suggests another status, say it doesn't apply to you (for head of household: someone else pays more than half the cost of keeping up your home).`,
+    '- Business expenses in your facts are ordinary costs of your business, with receipts: utilities = the business share of your phone and internet; supplies = materials used in the work; office = office supplies and postage; advertising = ads and your website; meals = business meals with clients; other = software subscriptions. When the business comes up, tell the assistant these amounts.',
     '- When the forms are done and the assistant has explained how to file, or it says it cannot go on, reply with exactly: DONE',
   ]
     .filter(Boolean)

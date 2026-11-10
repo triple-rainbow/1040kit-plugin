@@ -2,11 +2,11 @@
 
 `pnpm test` checks the engine against the golden returns (`packages/engine/test/golden/*.json`) and each MCP tool on its own. The end-to-end tests check what a user gets: the plugin as installed, the server as published, and the whole conversation from "do my taxes" to the filing instructions. They come in three layers, cheapest first. All of them use the same golden returns and synthetic people (Pat and Sam Example, fake SSNs and EINs).
 
-| Layer        | Command                                        | What plays the user            | Needs                            | Time, cost                                     |
-| ------------ | ---------------------------------------------- | ------------------------------ | -------------------------------- | ---------------------------------------------- |
-| 1. Install   | `pnpm test:install`                            | a script installs the plugin   | `claude` CLI, network            | ~1 min, free                                   |
-| 2. Tools     | `pnpm --filter 1040kit test:journey`           | a script calls the tools       | nothing (network for `npm@…`)    | ~2 min for all 34, free                        |
-| 3. Assistant | `pnpm --filter 1040kit test:journey:assistant` | a second model is the taxpayer | a signed-in Claude Code or a key | ~10–20 min per return, model usage (see below) |
+| Layer        | Command                                        | What plays the user            | Needs                            | Time, cost                                                   |
+| ------------ | ---------------------------------------------- | ------------------------------ | -------------------------------- | ------------------------------------------------------------ |
+| 1. Install   | `pnpm test:install`                            | a script installs the plugin   | `claude` CLI, network            | ~1 min, free                                                 |
+| 2. Tools     | `pnpm --filter 1040kit test:journey`           | a script calls the tools       | nothing (network for `npm@…`)    | ~2 min for all 34, free                                      |
+| 3. Assistant | `pnpm --filter 1040kit test:journey:assistant` | a second model is the taxpayer | a signed-in Claude Code or a key | ~10–20 min and $4–14 per return (about $18–25 for the three) |
 
 The scripts are in `plugins/scripts/install-check.sh` and `packages/mcp/test/journey/`. Layers 2 and 3 share `shared.ts`: the golden returns as documents and answers, and `verifyReturn`, which checks a finished workspace.
 
@@ -66,6 +66,8 @@ This is the real conversation. Claude Code runs headless (`claude -p`, resumed e
 - say the documents are saved when given the inbox path (the script puts them there);
 - never give an SSN;
 - agree to the terms, and say "looks good" at the review;
+- keep the golden's filing status, even when the assistant suggests another;
+- describe its business expenses (utilities = the business share of phone and internet, and so on) when the business comes up;
 - choose print and mail;
 - say `DONE` at the end.
 
