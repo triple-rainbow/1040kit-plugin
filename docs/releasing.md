@@ -34,5 +34,6 @@ On GitHub, create the `npm` environment (Settings → Environments → New envir
    ```
 
 3. The **Release** workflow checks that the tag matches the package version, runs every test, packs and publishes with provenance. Check the result at https://www.npmjs.com/package/1040kit.
+4. Run the golden journey against the published package: `pnpm --filter 1040kit test:journey -- --server=npm@<version>` ([golden-journey.md](golden-journey.md)). Every case should pass or be blocked as out of scope.
 
 `0.1.0` (2026-11-08) is the first working release; `0.0.1` was a README-only placeholder.

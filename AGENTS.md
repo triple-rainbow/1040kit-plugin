@@ -15,6 +15,7 @@ Public repo: the tax engine, the MCP server (npm `1040kit`) and the assistant pl
 - `pnpm typecheck`
 - `pnpm --filter 1040kit widget:harness` — build the widget test host
 - `pnpm --filter 1040kit test:pack` — pack the npm package, install it outside the workspace and drive the installed bin (needs the network)
+- `pnpm --filter 1040kit test:journey` — run every golden return through the server like a user's assistant and check numbers, PDF placement and filing output (`-- --server=npm@<version>` for a published release; see `docs/golden-journey.md`)
 
 ## Rules
 
