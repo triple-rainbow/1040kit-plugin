@@ -22,7 +22,7 @@
     "@types/node": "^22.19.17",
     "prettier": "^3.8.4",
     "tsx": "^4.21.0",
-    "typescript": "^5.9.3"
+    "typescript": "^7.0.2"
   },
   "packageManager": "pnpm@10.20.0",
   "pnpm": {
