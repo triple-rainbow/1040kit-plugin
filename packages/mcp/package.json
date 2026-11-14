@@ -55,7 +55,7 @@
     "widget:harness": "node --import tsx scripts/widget-harness/build.ts"
   },
   "dependencies": {
-    "@modelcontextprotocol/ext-apps": "1.7.5",
+    "@modelcontextprotocol/ext-apps": "2.0.4",
     "@modelcontextprotocol/sdk": "^1.32.2",
     "@tesseract.js-data/eng": "^1.0.0",
     "csv-parse": "^7.0.3",
